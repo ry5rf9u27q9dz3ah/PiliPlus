@@ -424,15 +424,15 @@ class MemberHttp {
       ),
     );
     if (res.data['code'] == 0) {
-      try {
-        DynamicsDataModel data = DynamicsDataModel.fromJson(res.data['data']);
-        if (data.loadNext == true) {
-          return memberDynamic(offset: data.offset, mid: mid);
-        }
-        return Success(data);
-      } catch (err) {
-        return Error(err.toString());
+      // try {
+      DynamicsDataModel data = DynamicsDataModel.fromJson(res.data['data']);
+      if (data.loadNext == true) {
+        return memberDynamic(offset: data.offset, mid: mid);
       }
+      return Success(data);
+      // } catch (err) {
+      //   return Error(err.toString());
+      // }
     } else {
       Map errMap = const {
         -352: '风控校验失败，请检查登录状态',
