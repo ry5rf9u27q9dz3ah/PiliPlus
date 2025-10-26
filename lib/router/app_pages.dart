@@ -50,7 +50,7 @@ import 'package:PiliPlus/pages/setting/extra_setting.dart';
 import 'package:PiliPlus/pages/setting/pages/bar_set.dart';
 import 'package:PiliPlus/pages/setting/pages/color_select.dart';
 import 'package:PiliPlus/pages/setting/pages/display_mode.dart';
-import 'package:PiliPlus/pages/setting/pages/font_size_select.dart';
+import 'package:PiliPlus/pages/setting/pages/font_setting.dart';
 import 'package:PiliPlus/pages/setting/pages/logs.dart';
 import 'package:PiliPlus/pages/setting/pages/play_speed_set.dart';
 import 'package:PiliPlus/pages/setting/play_setting.dart';
@@ -132,15 +132,13 @@ class Routes {
     //
     CustomGetPage(name: '/blackListPage', page: () => const BlackListPage()),
     CustomGetPage(name: '/colorSetting', page: () => const ColorSelectPage()),
-    CustomGetPage(
-      name: '/fontSizeSetting',
-      page: () => const FontSizeSelectPage(),
-    ),
     // 屏幕帧率
     CustomGetPage(
       name: '/displayModeSetting',
       page: () => const SetDisplayMode(),
     ),
+    // 字体设置
+    CustomGetPage(name: '/fontSetting', page: () => const FontSettingPage()),
     // 关于
     CustomGetPage(name: '/about', page: () => const AboutPage()),
     //

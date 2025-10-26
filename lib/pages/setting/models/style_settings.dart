@@ -79,36 +79,16 @@ List<SettingsModel> get styleSettings => [
     needReboot: true,
   ),
   SettingsModel(
-    settingsType: SettingsType.sw1tch,
-    title: 'App字体字重',
-    subtitle: '点击设置',
-    setKey: SettingBoxKey.appFontWeight,
-    defaultVal: false,
-    onTap: () {
-      showDialog<double>(
-        context: Get.context!,
-        builder: (context) {
-          return SlideDialog(
-            title: 'App字体字重',
-            value: Pref.appFontWeight.toDouble() + 1,
-            min: 1,
-            max: FontWeight.values.length.toDouble(),
-            divisions: FontWeight.values.length - 1,
-          );
-        },
-      ).then((res) async {
-        if (res != null) {
-          await GStorage.setting.put(
-            SettingBoxKey.appFontWeight,
-            res.toInt() - 1,
-          );
-          Get.forceAppUpdate();
-        }
-      });
-    },
+    settingsType: SettingsType.normal,
+    onTap: (setState) => Get.toNamed('/fontSetting'),
+    title: '修改字体',
     leading: const Icon(Icons.text_fields),
-    onChanged: (value) {
-      Get.forceAppUpdate();
+    getSubtitle: () {
+      final family = Pref.appFontFamily.trim();
+      final fallbacks = Pref.appFontFallbacks;
+      final mainLabel = family.isEmpty ? '系统默认' : family;
+      final fbLabel = fallbacks.isEmpty ? '' : ' · 备用${fallbacks.length}个';
+      return '$mainLabel$fbLabel';
     },
   ),
   SettingsModel(
@@ -692,21 +672,7 @@ List<SettingsModel> get styleSettings => [
       );
     },
   ),
-  SettingsModel(
-    settingsType: SettingsType.normal,
-    onTap: (setState) async {
-      var result = await Get.toNamed('/fontSizeSetting');
-      if (result != null) {
-        Get.put(ColorSelectController()).currentTextScale.value = result;
-      }
-    },
-    title: '字体大小',
-    leading: const Icon(Icons.format_size_outlined),
-    getSubtitle: () =>
-        Get.put(ColorSelectController()).currentTextScale.value == 1.0
-        ? '默认'
-        : Get.put(ColorSelectController()).currentTextScale.value.toString(),
-  ),
+  // 字体大小已整合到“修改字体”页面
   SettingsModel(
     settingsType: SettingsType.normal,
     onTap: (setState) => Get.toNamed(

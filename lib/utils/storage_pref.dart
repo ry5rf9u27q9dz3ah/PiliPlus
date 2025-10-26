@@ -516,6 +516,13 @@ abstract class Pref {
   static int get appFontWeight =>
       _setting.get(SettingBoxKey.appFontWeight, defaultValue: -1);
 
+  static String get appFontFamily =>
+      _setting.get(SettingBoxKey.appFontFamily, defaultValue: '');
+
+  static List<String> get appFontFallbacks => List<String>.from(
+    _setting.get(SettingBoxKey.appFontFallbacks, defaultValue: const []),
+  ).map((e) => e.trim()).where((e) => e.isNotEmpty).toList(growable: false);
+
   static bool get enableDragSubtitle =>
       _setting.get(SettingBoxKey.enableDragSubtitle, defaultValue: false);
 

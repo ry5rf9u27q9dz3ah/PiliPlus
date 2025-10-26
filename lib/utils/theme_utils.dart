@@ -20,13 +20,25 @@ abstract class ThemeUtils {
     final fontWeight = appFontWeight == -1
         ? null
         : FontWeight.values[appFontWeight];
-    late final textStyle = TextStyle(fontWeight: fontWeight);
+    final family = Pref.appFontFamily.trim();
+    final fontFamily = family.isEmpty ? null : family;
+    final fallback = Pref.appFontFallbacks;
+    final textStyle = (fontWeight != null)
+        ? TextStyle(
+            fontWeight: fontWeight,
+            fontFamily: fontFamily,
+            fontFamilyFallback: fallback.isEmpty ? null : fallback,
+          )
+        : TextStyle(
+            fontFamily: fontFamily,
+            fontFamilyFallback: fallback.isEmpty ? null : fallback,
+          );
     ThemeData themeData = ThemeData(
       colorScheme: colorScheme,
       useMaterial3: true,
-      textTheme: fontWeight == null
-          ? null
-          : TextTheme(
+      fontFamily: fontFamily,
+      fontFamilyFallback: fallback.isEmpty ? null : fallback,
+      textTheme: TextTheme(
               displayLarge: textStyle,
               displayMedium: textStyle,
               displaySmall: textStyle,
@@ -43,9 +55,7 @@ abstract class ThemeUtils {
               labelMedium: textStyle,
               labelSmall: textStyle,
             ),
-      tabBarTheme: fontWeight == null
-          ? null
-          : TabBarThemeData(labelStyle: textStyle),
+      tabBarTheme: TabBarThemeData(labelStyle: textStyle),
       appBarTheme: AppBarTheme(
         elevation: 0,
         titleSpacing: 0,
@@ -56,6 +66,7 @@ abstract class ThemeUtils {
           fontSize: 16,
           color: colorScheme.onSurface,
           fontWeight: fontWeight,
+          fontFamily: fontFamily,
         ),
       ),
       navigationBarTheme: NavigationBarThemeData(
@@ -65,7 +76,11 @@ abstract class ThemeUtils {
         actionTextColor: colorScheme.primary,
         backgroundColor: colorScheme.secondaryContainer,
         closeIconColor: colorScheme.secondary,
-        contentTextStyle: TextStyle(color: colorScheme.onSecondaryContainer),
+        contentTextStyle: TextStyle(
+          color: colorScheme.onSecondaryContainer,
+          fontFamily: fontFamily,
+          fontFamilyFallback: fallback.isEmpty ? null : fallback,
+        ),
         elevation: 20,
       ),
       popupMenuTheme: PopupMenuThemeData(
@@ -91,6 +106,8 @@ abstract class ThemeUtils {
           fontSize: 18,
           color: colorScheme.onSurface,
           fontWeight: fontWeight,
+          fontFamily: fontFamily,
+          fontFamilyFallback: fallback.isEmpty ? null : fallback,
         ),
         backgroundColor: colorScheme.surface,
       ),
@@ -103,9 +120,11 @@ abstract class ThemeUtils {
       // ignore: deprecated_member_use
       sliderTheme: const SliderThemeData(year2023: false),
       tooltipTheme: TooltipThemeData(
-        textStyle: const TextStyle(
+        textStyle: TextStyle(
           color: Colors.white,
           fontSize: 14,
+          fontFamily: fontFamily,
+          fontFamilyFallback: fallback.isEmpty ? null : fallback,
         ),
         decoration: BoxDecoration(
           color: Colors.grey[700]!.withValues(alpha: 0.9),
