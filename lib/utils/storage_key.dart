@@ -145,7 +145,8 @@ abstract class SettingBoxKey {
       showMemberShop = 'showMemberShop',
       enablePlayAll = 'enablePlayAll',
       enableTapDm = 'enableTapDm',
-      setSystemBrightness = 'setSystemBrightness';
+      setSystemBrightness = 'setSystemBrightness',
+      downloadPath = 'downloadPath';
 
   static const String minimizeOnExit = 'minimizeOnExit',
       windowSize = 'windowSize',
