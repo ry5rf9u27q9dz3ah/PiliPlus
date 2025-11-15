@@ -193,8 +193,9 @@ class LearningModeService {
     if (item is Map) {
       if (item.containsKey('upId')) return item['upId']?.toString();
       if (item.containsKey('mid')) return item['mid']?.toString();
-      if (item.containsKey('owner') && item['owner'] is Map)
+      if (item.containsKey('owner') && item['owner'] is Map) {
         return item['owner']['mid']?.toString();
+      }
     }
     try {
       final m = item;
@@ -213,14 +214,16 @@ class LearningModeService {
           ts.add(t.toString());
         }
       }
-      if (item.containsKey('tag') && item['tag'] != null)
+      if (item.containsKey('tag') && item['tag'] != null) {
         ts.add(item['tag'].toString());
+      }
       return ts;
     }
     try {
       final m = item;
-      if (m.tags is List)
+      if (m.tags is List) {
         return (m.tags as List).map((e) => e.toString()).toList();
+      }
     } catch (_) {}
     return [];
   }
@@ -240,8 +243,9 @@ class LearningModeService {
   String? _extractDesc(dynamic item) {
     if (item == null) return null;
     if (item is Map) {
-      if (item.containsKey('description'))
+      if (item.containsKey('description')) {
         return item['description']?.toString();
+      }
       if (item.containsKey('desc')) return item['desc']?.toString();
     }
     try {

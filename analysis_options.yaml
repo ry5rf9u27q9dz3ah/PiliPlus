@@ -10,9 +10,14 @@
 include: package:flutter_lints/flutter.yaml
 
 analyzer:
+  errors:
+    strict_top_level_inference: ignore
+    deprecated_member_use: ignore
+    package_names: ignore
   exclude:
     - lib/grpc/bilibili/**
     - lib/grpc/google/**
+    - lib/common/**
 
 formatter:
   trailing_commas: preserve

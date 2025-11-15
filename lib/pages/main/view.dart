@@ -25,6 +25,8 @@ import 'package:material_design_icons_flutter/material_design_icons_flutter.dart
 import 'package:tray_manager/tray_manager.dart';
 import 'package:window_manager/window_manager.dart';
 
+import 'package:PiliPlus/pages/home/learning_mode_button.dart';
+
 class MainApp extends StatefulWidget {
   const MainApp({super.key});
 
@@ -550,6 +552,9 @@ class _MainAppState extends State<MainApp>
           ),
           onPressed: () => Get.toNamed('/search'),
         ),
+        // Learning Mode Button
+        const SizedBox(width: 4),
+        const LearningModeButton(),
       ],
     );
   }

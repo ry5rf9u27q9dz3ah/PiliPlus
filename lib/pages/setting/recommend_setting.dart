@@ -83,8 +83,8 @@ class _RecommendSettingState extends State<RecommendSetting> {
                         },
                       ),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.add),
+                    const IconButton(
+                      icon: Icon(Icons.add),
                       onPressed: null,
                     )
                   ]),
@@ -116,8 +116,8 @@ class _RecommendSettingState extends State<RecommendSetting> {
                         },
                       ),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.add),
+                    const IconButton(
+                      icon: Icon(Icons.add),
                       onPressed: null,
                     )
                   ]),
@@ -149,8 +149,8 @@ class _RecommendSettingState extends State<RecommendSetting> {
                         },
                       ),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.add),
+                    const IconButton(
+                      icon: Icon(Icons.add),
                       onPressed: null,
                     )
                   ]),
