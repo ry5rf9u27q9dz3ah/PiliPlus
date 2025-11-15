@@ -5,6 +5,7 @@ import 'package:PiliPlus/models/common/setting_type.dart';
 import 'package:PiliPlus/pages/about/view.dart';
 import 'package:PiliPlus/pages/login/controller.dart';
 import 'package:PiliPlus/pages/setting/extra_setting.dart';
+import 'package:PiliPlus/pages/setting/learning_mode_setting.dart';
 import 'package:PiliPlus/pages/setting/play_setting.dart';
 import 'package:PiliPlus/pages/setting/privacy_setting.dart';
 import 'package:PiliPlus/pages/setting/recommend_setting.dart';
@@ -76,6 +77,11 @@ class _SettingPageState extends State<SettingPage> {
       icon: Icon(Icons.extension_outlined),
     ),
     _SettingsModel(
+      type: SettingType.learningMode,
+      subtitle: '学习模式白名单（按 UP / tag / 关键字）',
+      icon: Icon(Icons.school_outlined),
+    ),
+    _SettingsModel(
       type: SettingType.webdavSetting,
       icon: Icon(MdiIcons.databaseCogOutline),
     ),
@@ -84,6 +90,8 @@ class _SettingPageState extends State<SettingPage> {
       icon: Icon(Icons.info_outline),
     ),
   ];
+
+  // LearningMode moved to its own subpage
 
   @override
   Widget build(BuildContext context) {
@@ -115,6 +123,9 @@ class _SettingPageState extends State<SettingPage> {
                         showAppBar: false,
                       ),
                       SettingType.recommendSetting => const RecommendSetting(
+                        showAppBar: false,
+                      ),
+                      SettingType.learningMode => const LearningModeSetting(
                         showAppBar: false,
                       ),
                       SettingType.videoSetting => const VideoSetting(

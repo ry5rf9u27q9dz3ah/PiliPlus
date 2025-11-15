@@ -121,6 +121,7 @@ class Routes {
       name: '/recommendSetting',
       page: () => const RecommendSetting(),
     ),
+    // learning mode UI migrated into RecommendSetting
     // 音视频设置
     CustomGetPage(name: '/videoSetting', page: () => const VideoSetting()),
     // 播放器设置

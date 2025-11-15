@@ -10,6 +10,7 @@ import 'package:PiliPlus/models_new/dynamic/dyn_topic_pub_search/data.dart';
 import 'package:PiliPlus/models_new/pgc/pgc_info_model/result.dart';
 import 'package:PiliPlus/models_new/search/search_rcmd/data.dart';
 import 'package:PiliPlus/models_new/search/search_trending/data.dart';
+import 'package:PiliPlus/services/learning_mode_service.dart';
 import 'package:PiliPlus/utils/extension.dart';
 import 'package:PiliPlus/utils/request_utils.dart';
 import 'package:PiliPlus/utils/wbi_sign.dart';
@@ -281,6 +282,17 @@ class SearchHttp {
       },
     );
     if (res.data['code'] == 0) {
+      // Apply client-side learning mode filtering if enabled
+      final raw = res.data['data'];
+      try {
+        if (raw is Map && raw['list'] is List) {
+          final filtered = (raw['list'] as List)
+              .where((i) => LearningModeService.instance.matches(i))
+              .toList();
+          raw['list'] = filtered;
+        }
+      } catch (_) {}
+
       return Success(SearchRcmdData.fromJson(res.data['data']));
     } else {
       return Error(res.data['message']);

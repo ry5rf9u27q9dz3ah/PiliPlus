@@ -4,6 +4,7 @@ import 'package:PiliPlus/common/widgets/scroll_physics.dart';
 import 'package:PiliPlus/models/common/dynamic/dynamic_badge_mode.dart';
 import 'package:PiliPlus/models/common/image_type.dart';
 import 'package:PiliPlus/pages/home/controller.dart';
+import 'package:PiliPlus/pages/home/learning_mode_button.dart';
 import 'package:PiliPlus/pages/main/controller.dart';
 import 'package:PiliPlus/pages/mine/controller.dart';
 import 'package:PiliPlus/utils/extension.dart';
@@ -144,6 +145,8 @@ class _HomePageState extends State<HomePage>
                   ),
           ),
         ),
+        const SizedBox(width: 4),
+        const LearningModeButton(),
       ],
     );
   }
