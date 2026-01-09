@@ -37,10 +37,15 @@ abstract final class LiveHttp {
     required Object msg,
     Object? dmType,
     Object? emoticonOptions,
+    int replyMid = 0,
+    String replayDmid = '',
   }) async {
     String csrf = Accounts.main.csrf;
     final res = await Request().post(
       Api.sendLiveMsg,
+      queryParameters: await WbiSign.makSign({
+        'web_location': 444.8,
+      }),
       data: FormData.fromMap({
         'bubble': 0,
         'msg': msg,
@@ -52,10 +57,10 @@ abstract final class LiveHttp {
         else ...{
           'room_type': 0,
           'jumpfrom': 0,
-          'reply_mid': 0,
+          'reply_mid': replyMid,
           'reply_attr': 0,
-          'replay_dmid': '',
-          'statistics': Constants.statistics,
+          'replay_dmid': replayDmid,
+          'statistics': '{"appId":100,"platform":5}',
           'reply_type': 0,
           'reply_uname': '',
         },
@@ -686,6 +691,42 @@ abstract final class LiveHttp {
       } catch (e, s) {
         return Error('$e\n\n$s');
       }
+    } else {
+      return Error(res.data['message']);
+    }
+  }
+
+  static Future<LoadingState<Null>> superChatReport({
+    required int id,
+    required Object roomId,
+    required Object uid,
+    required String msg,
+    required String reason,
+    required int ts,
+    required String token,
+  }) async {
+    final csrf = Accounts.main.csrf;
+    final res = await Request().post(
+      Api.superChatReport,
+      data: {
+        'id': id,
+        'roomid': roomId,
+        'uid': uid,
+        'msg': msg,
+        'reason': reason,
+        'ts': ts,
+        'sign': '',
+        'reason_id': reason,
+        'token': token,
+        'id_str': id.toString(),
+        'csrf_token': csrf,
+        'csrf': csrf,
+        'visit_id': '',
+      },
+      options: Options(contentType: Headers.formUrlEncodedContentType),
+    );
+    if (res.data['code'] == 0) {
+      return const Success(null);
     } else {
       return Error(res.data['message']);
     }

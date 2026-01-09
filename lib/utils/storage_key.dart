@@ -58,6 +58,7 @@ abstract final class SettingBoxKey {
       defaultShowComment = 'defaultShowComment',
       replySortType = 'replySortType',
       defaultDynamicType = 'defaultDynamicType',
+      showDynInteraction = 'showDynInteraction',
       enableHotKey = 'enableHotKey',
       enableSearchRcmd = 'enableSearchRcmd',
       enableQuickFav = 'enableQuickFav',
@@ -195,9 +196,10 @@ abstract final class SettingBoxKey {
       danmakuStaticDuration = 'danmakuStaticDuration',
       danmakuMassiveMode = 'danmakuMassiveMode',
       danmakuFixedV = 'danmakuFixedV',
+      danmakuStatic2Scroll = 'danmakuStatic2Scroll',
       danmakuLineHeight = 'danmakuLineHeight',
-      strokeWidth = 'strokeWidth',
-      fontWeight = 'fontWeight';
+      danmakuStrokeWidth = 'strokeWidth',
+      danmakuFontWeight = 'fontWeight';
 
   static const String systemProxyHost = 'systemProxyHost',
       systemProxyPort = 'systemProxyPort';

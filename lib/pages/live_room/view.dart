@@ -4,6 +4,7 @@ import 'dart:ui';
 
 import 'package:PiliPlus/common/widgets/button/icon_button.dart';
 import 'package:PiliPlus/common/widgets/custom_icon.dart';
+import 'package:PiliPlus/common/widgets/flutter/text_field/controller.dart';
 import 'package:PiliPlus/common/widgets/image/network_img_layer.dart';
 import 'package:PiliPlus/common/widgets/keep_alive_wrapper.dart';
 import 'package:PiliPlus/common/widgets/scroll_physics.dart';
@@ -266,6 +267,7 @@ class _LiveRoomPageState extends State<LiveRoomPage>
                     plPlayerController: plPlayerController,
                     isFullScreen: isFullScreen,
                     isPipMode: plPlayerController.isDesktopPip || isPipMode,
+                    size: Size(width, height),
                   ),
           );
         }
@@ -284,17 +286,10 @@ class _LiveRoomPageState extends State<LiveRoomPage>
               right: 0,
               child: TextButton(
                 onPressed: () {
-                  _liveRoomController.fsSC.value = SuperChatItem.fromJson({
-                    "id": Utils.random.nextInt(2147483647),
-                    "price": 66,
-                    "end_time":
-                        DateTime.now().millisecondsSinceEpoch ~/ 1000 + 5,
-                    "message": Utils.generateRandomString(55),
-                    "user_info": {
-                      "face": "",
-                      "uname": Utils.generateRandomString(8),
-                    },
-                  });
+                  final item = SuperChatItem.random;
+                  _liveRoomController
+                    ..fsSC.value = item
+                    ..addDm(item);
                 },
                 child: const Text('add superchat'),
               ),
@@ -330,6 +325,7 @@ class _LiveRoomPageState extends State<LiveRoomPage>
                         child: SuperChatCard(
                           item: item,
                           onRemove: () => _liveRoomController.fsSC.value = null,
+                          onReport: () => _liveRoomController.reportSC(item),
                         ),
                       ),
                       Positioned(
@@ -678,7 +674,7 @@ class _LiveRoomPageState extends State<LiveRoomPage>
         clampDouble(maxHeight / maxWidth * 1.08, 0.56, 0.7) * maxWidth;
     final rightWidth = min(400.0, maxWidth - videoWidth - padding.horizontal);
     videoWidth = maxWidth - rightWidth - padding.horizontal;
-    final videoHeight = maxHeight - padding.top;
+    final videoHeight = maxHeight - padding.top - kToolbarHeight;
     final width = isFullScreen ? maxWidth : videoWidth;
     final height = isFullScreen ? maxHeight - padding.top : videoHeight;
     return Padding(
@@ -725,6 +721,16 @@ class _LiveRoomPageState extends State<LiveRoomPage>
       isPP: isPP,
       roomId: _liveRoomController.roomId,
       liveRoomController: _liveRoomController,
+      onAtUser: (item) => _liveRoomController
+        ..savedDanmaku = [
+          RichTextItem.fromStart(
+            '@${item.name} ',
+            rawText: item.uid.toString(),
+            type: .at,
+            id: item.extra.id.toString(),
+          ),
+        ]
+        ..onSendDanmaku(),
     );
     return Padding(
       padding: EdgeInsets.only(bottom: 12, top: isPortrait ? 12 : 0),
@@ -977,6 +983,7 @@ class LiveDanmaku extends StatefulWidget {
   final PlPlayerController plPlayerController;
   final bool isPipMode;
   final bool isFullScreen;
+  final Size size;
 
   const LiveDanmaku({
     super.key,
@@ -984,6 +991,7 @@ class LiveDanmaku extends StatefulWidget {
     required this.plPlayerController,
     this.isPipMode = false,
     required this.isFullScreen,
+    required this.size,
   });
 
   @override
@@ -1009,21 +1017,20 @@ class _LiveDanmakuState extends State<LiveDanmaku> {
   @override
   Widget build(BuildContext context) {
     return Obx(
-      () {
-        return AnimatedOpacity(
-          opacity: plPlayerController.enableShowDanmaku.value
-              ? plPlayerController.danmakuOpacity.value
-              : 0,
-          duration: const Duration(milliseconds: 100),
-          child: DanmakuScreen<DanmakuExtra>(
-            createdController: (e) {
-              widget.liveRoomController.danmakuController =
-                  plPlayerController.danmakuController = e;
-            },
-            option: DanmakuOptions.get(notFullscreen: widget.notFullscreen),
-          ),
-        );
-      },
+      () => AnimatedOpacity(
+        opacity: plPlayerController.enableShowDanmaku.value
+            ? plPlayerController.danmakuOpacity.value
+            : 0,
+        duration: const Duration(milliseconds: 100),
+        child: DanmakuScreen<DanmakuExtra>(
+          createdController: (e) {
+            widget.liveRoomController.danmakuController =
+                plPlayerController.danmakuController = e;
+          },
+          option: DanmakuOptions.get(notFullscreen: widget.notFullscreen),
+          size: widget.size,
+        ),
+      ),
     );
   }
 }

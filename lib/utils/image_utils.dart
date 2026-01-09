@@ -50,22 +50,24 @@ abstract final class ImageUtils {
   }
 
   // 获取存储权限
-  static Future<bool> requestStoragePer(BuildContext context) async {
-    await Permission.storage.request();
-    PermissionStatus status = await Permission.storage.status;
+  static Future<bool> requestPer() async {
+    final status = Platform.isAndroid
+        ? await Permission.storage.request()
+        : await Permission.photos.request();
     if (status == PermissionStatus.denied ||
         status == PermissionStatus.permanentlyDenied) {
-      if (!context.mounted) return false;
-      showDialog(
-        context: context,
+      SmartDialog.show(
         builder: (context) {
-          return const AlertDialog(
-            title: Text('提示'),
-            content: Text('存储权限未授权'),
+          return AlertDialog(
+            title: const Text('提示'),
+            content: const Text('存储权限未授权'),
             actions: [
               TextButton(
-                onPressed: openAppSettings,
-                child: Text('去授权'),
+                onPressed: () {
+                  SmartDialog.dismiss();
+                  openAppSettings();
+                },
+                child: const Text('去授权'),
               ),
             ],
           );
@@ -77,42 +79,25 @@ abstract final class ImageUtils {
     }
   }
 
-  // 获取相册权限
-  static Future<bool> requestPhotoPer() async {
-    await Permission.photos.request();
-    PermissionStatus status = await Permission.photos.status;
-    if (status == PermissionStatus.denied ||
-        status == PermissionStatus.permanentlyDenied) {
-      return false;
-    } else {
-      return true;
-    }
-  }
-
-  static Future<bool> checkPermissionDependOnSdkInt(
-    BuildContext context,
-  ) async {
+  static Future<bool> checkPermissionDependOnSdkInt() async {
     if (Platform.isAndroid) {
-      if (await Utils.sdkInt <= 32) {
-        if (!context.mounted) return false;
-        return requestStoragePer(context);
+      if (await Utils.sdkInt < 29) {
+        return requestPer();
       } else {
-        return requestPhotoPer();
+        return true;
       }
     }
-    return requestStoragePer(context);
+    return requestPer();
   }
 
   static Future<bool> downloadLivePhoto({
-    required BuildContext context,
     required String url,
     required String liveUrl,
     required int width,
     required int height,
   }) async {
     try {
-      if (PlatformUtils.isMobile &&
-          !await checkPermissionDependOnSdkInt(context)) {
+      if (PlatformUtils.isMobile && !await checkPermissionDependOnSdkInt()) {
         return false;
       }
       if (!silentDownImg) SmartDialog.showLoading(msg: '正在下载');
@@ -167,12 +152,10 @@ abstract final class ImageUtils {
   }
 
   static Future<bool> downloadImg(
-    BuildContext context,
     List<String> imgList, [
     CacheManager? manager,
   ]) async {
-    if (PlatformUtils.isMobile &&
-        !await checkPermissionDependOnSdkInt(context)) {
+    if (PlatformUtils.isMobile && !await checkPermissionDependOnSdkInt()) {
       return false;
     }
     CancelToken? cancelToken;
@@ -305,21 +288,21 @@ abstract final class ImageUtils {
     required String fileName,
     String ext = 'png',
   }) async {
-    SaveResult? result;
+    SaveResult? res;
     fileName += '.$ext';
     if (PlatformUtils.isMobile) {
       SmartDialog.showLoading(msg: '正在保存');
-      result = await SaverGallery.saveImage(
+      res = await SaverGallery.saveImage(
         bytes,
         fileName: fileName,
         androidRelativePath: _androidRelativePath,
         skipIfExists: false,
       );
       SmartDialog.dismiss();
-      if (result.isSuccess) {
+      if (res.isSuccess) {
         SmartDialog.showToast(' 已保存 ');
       } else {
-        SmartDialog.showToast('保存失败，${result.errorMessage}');
+        SmartDialog.showToast('保存失败，${res.errorMessage}');
       }
     } else {
       SmartDialog.dismiss();
@@ -333,9 +316,9 @@ abstract final class ImageUtils {
       }
       await File(savePath).writeAsBytes(bytes);
       SmartDialog.showToast(' 已保存 ');
-      result = SaveResult(true, null);
+      res = SaveResult(true, null);
     }
-    return result;
+    return res;
   }
 
   static Future<void> saveFileImg({
@@ -350,9 +333,9 @@ abstract final class ImageUtils {
       SmartDialog.showToast("文件不存在");
       return;
     }
-    SaveResult? result;
+    SaveResult? res;
     if (PlatformUtils.isMobile) {
-      result = await SaverGallery.saveFile(
+      res = await SaverGallery.saveFile(
         filePath: filePath,
         fileName: fileName,
         androidRelativePath: _androidRelativePath,
@@ -370,13 +353,13 @@ abstract final class ImageUtils {
       }
       await file.copy(savePath);
       if (del) file.tryDel();
-      result = SaveResult(true, null);
+      res = SaveResult(true, null);
     }
     if (needToast) {
-      if (result.isSuccess) {
+      if (res.isSuccess) {
         SmartDialog.showToast(' 已保存 ');
       } else {
-        SmartDialog.showToast('保存失败，${result.errorMessage}');
+        SmartDialog.showToast('保存失败，${res.errorMessage}');
       }
     }
   }
