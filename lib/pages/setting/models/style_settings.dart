@@ -78,9 +78,8 @@ List<SettingsModel> get styleSettings => [
     defaultVal: false,
     needReboot: true,
   ),
-  SettingsModel(
-    settingsType: SettingsType.normal,
-    onTap: (setState) => Get.toNamed('/fontSetting'),
+  NormalModel(
+    onTap: (context, setState) => Get.toNamed('/fontSetting'),
     title: '修改字体',
     leading: const Icon(Icons.text_fields),
     getSubtitle: () {
@@ -669,9 +668,8 @@ List<SettingsModel> get styleSettings => [
     },
   ),
   // 字体大小已整合到“修改字体”页面
-  SettingsModel(
-    settingsType: SettingsType.normal,
-    onTap: (setState) => Get.toNamed(
+  NormalModel(
+    onTap: (context, setState) => Get.toNamed(
       '/barSetting',
       arguments: {
         'key': SettingBoxKey.tabBarSort,

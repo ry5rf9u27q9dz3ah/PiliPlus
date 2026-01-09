@@ -5,7 +5,7 @@ enum SettingType {
   playSetting('播放器设置'),
   styleSetting('外观设置'),
   extraSetting('其它设置'),
-  learningMode('学习模式'),
+  learningMode('沉浸模式'),
   webdavSetting('WebDAV 设置'),
   about('关于')
   ;
