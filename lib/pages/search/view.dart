@@ -4,18 +4,17 @@ import 'package:PiliPlus/common/widgets/disabled_icon.dart';
 import 'package:PiliPlus/common/widgets/loading_widget/loading_widget.dart';
 import 'package:PiliPlus/http/loading_state.dart';
 import 'package:PiliPlus/models_new/search/search_rcmd/data.dart';
-import 'package:PiliPlus/pages/about/view.dart' show showInportExportDialog;
+import 'package:PiliPlus/pages/about/view.dart' show showImportExportDialog;
 import 'package:PiliPlus/pages/search/controller.dart';
 import 'package:PiliPlus/pages/search/widgets/hot_keyword.dart';
 import 'package:PiliPlus/pages/search/widgets/search_text.dart';
 import 'package:PiliPlus/utils/em.dart' show Em;
-import 'package:PiliPlus/utils/extension.dart';
+import 'package:PiliPlus/utils/extension/size_ext.dart';
 import 'package:PiliPlus/utils/storage.dart';
 import 'package:PiliPlus/utils/storage_key.dart';
 import 'package:PiliPlus/utils/utils.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
-import 'package:get/get.dart' hide ContextExtensionss;
+import 'package:get/get.dart';
 
 class SearchPage extends StatefulWidget {
   const SearchPage({super.key});
@@ -74,6 +73,7 @@ class _SearchPageState extends State<SearchPage> {
           textInputAction: TextInputAction.search,
           onChanged: _searchController.onChange,
           decoration: InputDecoration(
+            visualDensity: .standard,
             hintText: _searchController.hintText ?? '搜索',
             border: InputBorder.none,
           ),
@@ -331,7 +331,7 @@ class _SearchPageState extends State<SearchPage> {
                         );
                       },
                     ),
-                    _exportHsitory(theme),
+                    _exportHistory(theme),
                     const Spacer(),
                     SizedBox(
                       height: 34,
@@ -381,7 +381,7 @@ class _SearchPageState extends State<SearchPage> {
     );
   }
 
-  Widget _exportHsitory(ThemeData theme) => SizedBox(
+  Widget _exportHistory(ThemeData theme) => SizedBox(
     width: 34,
     height: 34,
     child: IconButton(
@@ -392,20 +392,15 @@ class _SearchPageState extends State<SearchPage> {
         color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
       ),
       style: IconButton.styleFrom(padding: EdgeInsets.zero),
-      onPressed: () => showInportExportDialog<List>(
+      onPressed: () => showImportExportDialog<List>(
         context,
         title: '历史记录',
         toJson: () => jsonEncode(_searchController.historyList),
         fromJson: (json) {
-          try {
-            final list = List<String>.from(json);
-            _searchController.historyList.value = list;
-            GStorage.historyWord.put('cacheList', list);
-            return true;
-          } catch (e) {
-            SmartDialog.showToast(e.toString());
-            return false;
-          }
+          final list = List<String>.from(json);
+          _searchController.historyList.value = list;
+          GStorage.historyWord.put('cacheList', list);
+          return true;
         },
       ),
     ),
@@ -421,7 +416,7 @@ class _SearchPageState extends State<SearchPage> {
     bool isTrending,
   ) {
     return switch (loadingState) {
-      Success(:var response) =>
+      Success(:final response) =>
         response.list?.isNotEmpty == true
             ? LayoutBuilder(
                 builder: (context, constraints) => HotKeyword(
@@ -431,7 +426,7 @@ class _SearchPageState extends State<SearchPage> {
                 ),
               )
             : const SizedBox.shrink(),
-      Error(:var errMsg) => errorWidget(
+      Error(:final errMsg) => errorWidget(
         errMsg: errMsg,
         onReload: isTrending
             ? _searchController.queryTrendingList

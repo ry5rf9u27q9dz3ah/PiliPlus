@@ -1,12 +1,13 @@
 import 'package:PiliPlus/common/constants.dart';
 import 'package:PiliPlus/common/skeleton/video_card_v.dart';
+import 'package:PiliPlus/common/widgets/flutter/refresh_indicator.dart';
 import 'package:PiliPlus/common/widgets/loading_widget/http_error.dart';
-import 'package:PiliPlus/common/widgets/refresh_indicator.dart';
 import 'package:PiliPlus/common/widgets/video_card/video_card_v.dart';
 import 'package:PiliPlus/http/loading_state.dart';
 import 'package:PiliPlus/pages/common/common_page.dart';
 import 'package:PiliPlus/pages/rcmd/controller.dart';
 import 'package:PiliPlus/utils/grid.dart';
+import 'package:PiliPlus/utils/storage_pref.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -56,7 +57,7 @@ class _RcmdPageState extends CommonPageState<RcmdPage, RcmdController>
   late final gridDelegate = SliverGridDelegateWithExtentAndRatio(
     mainAxisSpacing: StyleString.cardSpace,
     crossAxisSpacing: StyleString.cardSpace,
-    maxCrossAxisExtent: Grid.smallCardWidth,
+    maxCrossAxisExtent: Pref.recommendCardWidth,
     childAspectRatio: StyleString.aspectRatio,
     mainAxisExtent: MediaQuery.textScalerOf(context).scale(90),
   );
@@ -64,8 +65,8 @@ class _RcmdPageState extends CommonPageState<RcmdPage, RcmdController>
   Widget _buildBody(LoadingState<List<dynamic>?> loadingState) {
     return switch (loadingState) {
       Loading() => _buildSkeleton,
-      Success(:var response) =>
-        response?.isNotEmpty == true
+      Success(:final response) =>
+        response != null && response.isNotEmpty
             ? SliverGrid.builder(
                 gridDelegate: gridDelegate,
                 itemBuilder: (context, index) {
@@ -125,11 +126,11 @@ class _RcmdPageState extends CommonPageState<RcmdPage, RcmdController>
                   }
                 },
                 itemCount: controller.lastRefreshAt != null
-                    ? response!.length + 1
-                    : response!.length,
+                    ? response.length + 1
+                    : response.length,
               )
             : HttpError(onReload: controller.onReload),
-      Error(:var errMsg) => HttpError(
+      Error(:final errMsg) => HttpError(
         errMsg: errMsg,
         onReload: controller.onReload,
       ),

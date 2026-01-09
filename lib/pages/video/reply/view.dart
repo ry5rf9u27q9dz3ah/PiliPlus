@@ -1,7 +1,7 @@
 import 'package:PiliPlus/common/skeleton/video_reply.dart';
 import 'package:PiliPlus/common/widgets/custom_sliver_persistent_header_delegate.dart';
+import 'package:PiliPlus/common/widgets/flutter/refresh_indicator.dart';
 import 'package:PiliPlus/common/widgets/loading_widget/http_error.dart';
-import 'package:PiliPlus/common/widgets/refresh_indicator.dart';
 import 'package:PiliPlus/grpc/bilibili/main/community/reply/v1.pb.dart'
     show ReplyInfo;
 import 'package:PiliPlus/http/loading_state.dart';
@@ -142,7 +142,7 @@ class _VideoReplyPanelState extends State<VideoReplyPanel>
               right: kFloatingActionButtonMargin,
               bottom: kFloatingActionButtonMargin + bottom,
               child: SlideTransition(
-                position: _videoReplyController.anim,
+                position: _videoReplyController.animation,
                 child: FloatingActionButton(
                   heroTag: null,
                   onPressed: () {
@@ -180,7 +180,7 @@ class _VideoReplyPanelState extends State<VideoReplyPanel>
         itemBuilder: (context, index) => const VideoReplySkeleton(),
         itemCount: 5,
       ),
-      Success(:var response) =>
+      Success(:final response) =>
         response != null && response.isNotEmpty
             ? SliverList.builder(
                 itemBuilder: (context, index) {
@@ -229,7 +229,7 @@ class _VideoReplyPanelState extends State<VideoReplyPanel>
                 errMsg: '还没有评论',
                 onReload: _videoReplyController.onReload,
               ),
-      Error(:var errMsg) => HttpError(
+      Error(:final errMsg) => HttpError(
         errMsg: errMsg,
         onReload: _videoReplyController.onReload,
       ),

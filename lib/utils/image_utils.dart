@@ -3,10 +3,12 @@ import 'dart:typed_data';
 
 import 'package:PiliPlus/common/constants.dart';
 import 'package:PiliPlus/http/init.dart';
-import 'package:PiliPlus/utils/extension.dart';
+import 'package:PiliPlus/utils/extension/file_ext.dart';
+import 'package:PiliPlus/utils/extension/string_ext.dart';
 import 'package:PiliPlus/utils/global_data.dart';
 import 'package:PiliPlus/utils/path_utils.dart';
 import 'package:PiliPlus/utils/permission_handler.dart';
+import 'package:PiliPlus/utils/platform_utils.dart';
 import 'package:PiliPlus/utils/storage_pref.dart';
 import 'package:PiliPlus/utils/utils.dart';
 import 'package:dio/dio.dart';
@@ -19,10 +21,11 @@ import 'package:live_photo_maker/live_photo_maker.dart';
 import 'package:saver_gallery/saver_gallery.dart';
 import 'package:share_plus/share_plus.dart';
 
-abstract class ImageUtils {
+abstract final class ImageUtils {
   static String get time =>
       DateFormat('yyyy-MM-dd_HH-mm-ss').format(DateTime.now());
   static bool silentDownImg = Pref.silentDownImg;
+  static const _androidRelativePath = 'Pictures/${Constants.appName}';
 
   // 图片分享
   static Future<void> onShareImg(String url) async {
@@ -108,7 +111,8 @@ abstract class ImageUtils {
     required int height,
   }) async {
     try {
-      if (Utils.isMobile && !await checkPermissionDependOnSdkInt(context)) {
+      if (PlatformUtils.isMobile &&
+          !await checkPermissionDependOnSdkInt(context)) {
         return false;
       }
       if (!silentDownImg) SmartDialog.showLoading(msg: '正在下载');
@@ -167,7 +171,8 @@ abstract class ImageUtils {
     List<String> imgList, [
     CacheManager? manager,
   ]) async {
-    if (Utils.isMobile && !await checkPermissionDependOnSdkInt(context)) {
+    if (PlatformUtils.isMobile &&
+        !await checkPermissionDependOnSdkInt(context)) {
       return false;
     }
     CancelToken? cancelToken;
@@ -189,23 +194,11 @@ abstract class ImageUtils {
 
         if (file == null) {
           final String filePath = '$tmpDirPath/$name';
-
           final response = await Request().downloadFile(
             url.http2https,
             filePath,
             cancelToken: cancelToken,
           );
-
-          if (Platform.isAndroid) {
-            if (response.statusCode == 200) {
-              await SaverGallery.saveFile(
-                filePath: filePath,
-                fileName: name,
-                androidRelativePath: "Pictures/${Constants.appName}",
-                skipIfExists: false,
-              ).whenComplete(File(filePath).tryDel);
-            }
-          }
           return (
             filePath: filePath,
             name: name,
@@ -213,21 +206,36 @@ abstract class ImageUtils {
             del: true,
           );
         } else {
-          if (Platform.isAndroid) {
-            await SaverGallery.saveFile(
-              filePath: file.path,
-              fileName: name,
-              androidRelativePath: "Pictures/${Constants.appName}",
-              skipIfExists: false,
-            );
-          }
-
-          return (filePath: file.path, name: name, statusCode: 200, del: false);
+          return (
+            filePath: file.path,
+            name: name,
+            statusCode: 200,
+            del: false,
+          );
         }
       });
       final result = await Future.wait(futures, eagerError: true);
-      if (!Platform.isAndroid) {
-        for (var res in result) {
+      if (PlatformUtils.isMobile) {
+        final delList = <String>[];
+        final saveList = <SaveFileData>[];
+        for (final i in result) {
+          if (i.del) delList.add(i.filePath);
+          if (i.statusCode == 200) {
+            saveList.add(
+              SaveFileData(
+                filePath: i.filePath,
+                fileName: i.name,
+                androidRelativePath: _androidRelativePath,
+              ),
+            );
+          }
+        }
+        await SaverGallery.saveFiles(saveList, skipIfExists: false);
+        for (final i in delList) {
+          File(i).tryDel();
+        }
+      } else {
+        for (final res in result) {
           if (res.statusCode == 200) {
             await saveFileImg(
               filePath: res.filePath,
@@ -254,6 +262,17 @@ abstract class ImageUtils {
     } finally {
       if (!silentDownImg) SmartDialog.dismiss(status: SmartStatus.loading);
     }
+  }
+
+  static final _suffixRegex = RegExp(
+    r'\.(jpg|jpeg|png|webp|gif|avif)$',
+    caseSensitive: false,
+  );
+  static String safeThumbnailUrl(String? src) {
+    if (src != null && _suffixRegex.hasMatch(src)) {
+      return thumbnailUrl(src);
+    }
+    return src.http2https;
   }
 
   static final _thumbRegex = RegExp(
@@ -288,12 +307,12 @@ abstract class ImageUtils {
   }) async {
     SaveResult? result;
     fileName += '.$ext';
-    if (Utils.isMobile) {
+    if (PlatformUtils.isMobile) {
       SmartDialog.showLoading(msg: '正在保存');
       result = await SaverGallery.saveImage(
         bytes,
         fileName: fileName,
-        androidRelativePath: "Pictures/${Constants.appName}",
+        androidRelativePath: _androidRelativePath,
         skipIfExists: false,
       );
       SmartDialog.dismiss();
@@ -332,11 +351,11 @@ abstract class ImageUtils {
       return;
     }
     SaveResult? result;
-    if (Utils.isMobile) {
+    if (PlatformUtils.isMobile) {
       result = await SaverGallery.saveFile(
         filePath: filePath,
         fileName: fileName,
-        androidRelativePath: "Pictures/${Constants.appName}",
+        androidRelativePath: _androidRelativePath,
         skipIfExists: false,
       );
       if (del) file.tryDel();

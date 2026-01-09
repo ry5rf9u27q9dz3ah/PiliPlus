@@ -1,7 +1,7 @@
 import 'package:PiliPlus/common/constants.dart';
 import 'package:PiliPlus/common/skeleton/space_opus.dart';
+import 'package:PiliPlus/common/widgets/flutter/refresh_indicator.dart';
 import 'package:PiliPlus/common/widgets/loading_widget/http_error.dart';
-import 'package:PiliPlus/common/widgets/refresh_indicator.dart';
 import 'package:PiliPlus/http/loading_state.dart';
 import 'package:PiliPlus/models_new/space/space_opus/item.dart';
 import 'package:PiliPlus/pages/member_opus/controller.dart';
@@ -123,7 +123,7 @@ class _MemberOpusState extends State<MemberOpus>
     maxCrossAxisExtent: Grid.smallCardWidth,
     mainAxisSpacing: StyleString.safeSpace,
     crossAxisSpacing: StyleString.safeSpace,
-    callback: (value) => _maxWidth = value,
+    afterCalc: (value) => _maxWidth = value,
   );
 
   Widget _buildBody(LoadingState<List<SpaceOpusItemModel>?> loadingState) {
@@ -135,8 +135,8 @@ class _MemberOpusState extends State<MemberOpus>
           childCount: 10,
         ),
       ),
-      Success(:var response) =>
-        response?.isNotEmpty == true
+      Success(:final response) =>
+        response != null && response.isNotEmpty
             ? SliverWaterfallFlow(
                 gridDelegate: gridDelegate,
                 delegate: SliverChildBuilderDelegate(
@@ -149,11 +149,11 @@ class _MemberOpusState extends State<MemberOpus>
                       maxWidth: _maxWidth,
                     );
                   },
-                  childCount: response!.length,
+                  childCount: response.length,
                 ),
               )
             : HttpError(onReload: _controller.onReload),
-      Error(:var errMsg) => HttpError(
+      Error(:final errMsg) => HttpError(
         errMsg: errMsg,
         onReload: _controller.onReload,
       ),

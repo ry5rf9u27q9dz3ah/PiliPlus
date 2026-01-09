@@ -8,7 +8,7 @@ import 'package:fixnum/fixnum.dart';
 import 'package:protobuf/protobuf.dart' show PbMap;
 import 'package:uuid/uuid.dart';
 
-class ImGrpc {
+abstract final class ImGrpc {
   static Future<LoadingState<RspSendMsg>> sendMsg({
     required int senderUid,
     required int receiverId,
@@ -166,13 +166,11 @@ class ImGrpc {
   }
 
   static Future<LoadingState<SetImSettingsReply>> setImSettings({
-    PbMap<int, Setting>? settings,
+    Map<int, Setting>? settings,
   }) {
     return GrpcReq.request(
       GrpcUrl.setImSettings,
-      SetImSettingsReq(
-        settings: settings?.entries,
-      ),
+      SetImSettingsReq(settings: settings?.entries),
       SetImSettingsReply.fromBuffer,
     );
   }

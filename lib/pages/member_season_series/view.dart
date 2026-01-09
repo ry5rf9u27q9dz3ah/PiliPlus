@@ -55,8 +55,8 @@ class _SeasonSeriesPageState extends State<SeasonSeriesPage>
   Widget _buildBody(LoadingState<List<SpaceSsModel>?> loadingState) {
     return switch (loadingState) {
       Loading() => gridSkeleton,
-      Success(:var response) =>
-        response?.isNotEmpty == true
+      Success(:final response) =>
+        response != null && response.isNotEmpty
             ? SliverGrid.builder(
                 gridDelegate: gridDelegate,
                 itemBuilder: (context, index) {
@@ -92,10 +92,10 @@ class _SeasonSeriesPageState extends State<SeasonSeriesPage>
                     },
                   );
                 },
-                itemCount: response!.length,
+                itemCount: response.length,
               )
             : HttpError(onReload: _controller.onReload),
-      Error(:var errMsg) => HttpError(
+      Error(:final errMsg) => HttpError(
         errMsg: errMsg,
         onReload: _controller.onReload,
       ),

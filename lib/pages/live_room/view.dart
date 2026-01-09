@@ -8,9 +8,11 @@ import 'package:PiliPlus/common/widgets/image/network_img_layer.dart';
 import 'package:PiliPlus/common/widgets/keep_alive_wrapper.dart';
 import 'package:PiliPlus/common/widgets/scroll_physics.dart';
 import 'package:PiliPlus/models/common/image_type.dart';
+import 'package:PiliPlus/models/common/live/live_contribution_rank_type.dart';
 import 'package:PiliPlus/models_new/live/live_room_info_h5/data.dart';
 import 'package:PiliPlus/models_new/live/live_superchat/item.dart';
-import 'package:PiliPlus/pages/danmaku/dnamaku_model.dart';
+import 'package:PiliPlus/pages/danmaku/danmaku_model.dart';
+import 'package:PiliPlus/pages/live_room/contribution_rank/controller.dart';
 import 'package:PiliPlus/pages/live_room/controller.dart';
 import 'package:PiliPlus/pages/live_room/superchat/superchat_card.dart';
 import 'package:PiliPlus/pages/live_room/superchat/superchat_panel.dart';
@@ -20,21 +22,26 @@ import 'package:PiliPlus/pages/live_room/widgets/header_control.dart';
 import 'package:PiliPlus/pages/video/widgets/player_focus.dart';
 import 'package:PiliPlus/plugin/pl_player/controller.dart';
 import 'package:PiliPlus/plugin/pl_player/models/play_status.dart';
+import 'package:PiliPlus/plugin/pl_player/utils/danmaku_options.dart';
 import 'package:PiliPlus/plugin/pl_player/utils/fullscreen.dart';
 import 'package:PiliPlus/plugin/pl_player/view.dart';
 import 'package:PiliPlus/services/service_locator.dart';
-import 'package:PiliPlus/utils/duration_utils.dart';
-import 'package:PiliPlus/utils/extension.dart';
+import 'package:PiliPlus/utils/extension/num_ext.dart';
+import 'package:PiliPlus/utils/extension/size_ext.dart';
+import 'package:PiliPlus/utils/extension/theme_ext.dart';
+import 'package:PiliPlus/utils/image_utils.dart';
 import 'package:PiliPlus/utils/page_utils.dart';
+import 'package:PiliPlus/utils/platform_utils.dart';
 import 'package:PiliPlus/utils/storage.dart';
 import 'package:PiliPlus/utils/storage_key.dart';
 import 'package:PiliPlus/utils/utils.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:canvas_danmaku/canvas_danmaku.dart';
+import 'package:floating/floating.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
-import 'package:get/get.dart' hide ContextExtensionss;
+import 'package:get/get.dart';
 import 'package:screen_brightness_platform_interface/screen_brightness_platform_interface.dart';
 
 class LiveRoomPage extends StatefulWidget {
@@ -151,6 +158,11 @@ class _LiveRoomPageState extends State<LiveRoomPage>
       ..removeStatusLister(playerListener)
       ..dispose();
     PageUtils.routeObserver.unsubscribe(this);
+    for (final e in LiveContributionRankType.values) {
+      Get.delete<ContributionRankController>(
+        tag: '${_liveRoomController.roomId}${e.name}',
+      );
+    }
     super.dispose();
   }
 
@@ -184,7 +196,7 @@ class _LiveRoomPageState extends State<LiveRoomPage>
   @override
   Widget build(BuildContext context) {
     Widget child;
-    if (plPlayerController.isPipMode) {
+    if (Platform.isAndroid && Floating().isPipMode) {
       child = videoPlayerPanel(
         isFullScreen,
         width: maxWidth,
@@ -214,6 +226,9 @@ class _LiveRoomPageState extends State<LiveRoomPage>
     Alignment alignment = Alignment.center,
     bool needDm = true,
   }) {
+    if (!plPlayerController.isLive) {
+      return const SizedBox.shrink();
+    }
     if (!isFullScreen && !plPlayerController.isDesktopPip) {
       _liveRoomController.fsSC.value = null;
     }
@@ -230,11 +245,14 @@ class _LiveRoomPageState extends State<LiveRoomPage>
             alignment: alignment,
             plPlayerController: plPlayerController,
             headerControl: LiveHeaderControl(
+              key: _liveRoomController.headerKey,
               title: roomInfoH5?.roomInfo?.title,
               upName: roomInfoH5?.anchorInfo?.baseInfo?.uname,
               plPlayerController: plPlayerController,
               onSendDanmaku: _liveRoomController.onSendDanmaku,
               onPlayAudio: _liveRoomController.queryLiveUrl,
+              isPortrait: isPortrait,
+              liveController: _liveRoomController,
             ),
             bottomControl: BottomControl(
               plPlayerController: plPlayerController,
@@ -247,7 +265,7 @@ class _LiveRoomPageState extends State<LiveRoomPage>
                     liveRoomController: _liveRoomController,
                     plPlayerController: plPlayerController,
                     isFullScreen: isFullScreen,
-                    isPipMode: isPipMode,
+                    isPipMode: plPlayerController.isDesktopPip || isPipMode,
                   ),
           );
         }
@@ -342,6 +360,10 @@ class _LiveRoomPageState extends State<LiveRoomPage>
     return PopScope(
       canPop: !isFullScreen,
       onPopInvokedWithResult: (bool didPop, Object? result) {
+        if (plPlayerController.controlsLock.value) {
+          plPlayerController.onLockControl(false);
+          return;
+        }
         if (isFullScreen) {
           plPlayerController.triggerFullScreen(status: false);
         }
@@ -352,7 +374,7 @@ class _LiveRoomPageState extends State<LiveRoomPage>
 
   Widget get childWhenDisabled {
     return Obx(() {
-      final isFullScreen = this.isFullScreen;
+      final isFullScreen = this.isFullScreen || plPlayerController.isDesktopPip;
       return Stack(
         clipBehavior: Clip.none,
         children: [
@@ -366,17 +388,22 @@ class _LiveRoomPageState extends State<LiveRoomPage>
                     ?.roomInfo
                     ?.appBackground;
                 Widget child;
-                if (appBackground?.isNotEmpty == true) {
+                if (appBackground != null && appBackground.isNotEmpty) {
                   child = CachedNetworkImage(
                     fit: BoxFit.cover,
                     width: maxWidth,
                     height: maxHeight,
-                    imageUrl: appBackground!.http2https,
+                    memCacheWidth: maxWidth.cacheSize(context),
+                    imageUrl: ImageUtils.safeThumbnailUrl(appBackground),
+                    placeholder: (_, _) => const SizedBox.shrink(),
                   );
                 } else {
                   child = Image.asset(
                     'assets/images/live/default_bg.webp',
                     fit: BoxFit.cover,
+                    width: maxWidth,
+                    height: maxHeight,
+                    cacheWidth: maxWidth.cacheSize(context),
                   );
                 }
                 return Positioned.fill(
@@ -484,62 +511,67 @@ class _LiveRoomPageState extends State<LiveRoomPage>
       backgroundColor: Colors.transparent,
       foregroundColor: Colors.white,
       titleTextStyle: const TextStyle(color: Colors.white),
-      title: Obx(
-        () {
-          RoomInfoH5Data? roomInfoH5 = _liveRoomController.roomInfoH5.value;
-          if (roomInfoH5 == null) {
-            return const SizedBox.shrink();
-          }
-          return GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: () => Get.toNamed('/member?mid=${roomInfoH5.roomInfo?.uid}'),
-            child: Row(
-              spacing: 10,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                NetworkImgLayer(
-                  width: 34,
-                  height: 34,
-                  type: ImageType.avatar,
-                  src: roomInfoH5.anchorInfo!.baseInfo!.face,
-                ),
-                Column(
-                  spacing: 1,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      roomInfoH5.anchorInfo!.baseInfo!.uname!,
-                      style: const TextStyle(fontSize: 14),
-                    ),
-                    Obx(() {
-                      final liveTime = _liveRoomController.liveTime.value;
-                      final textLarge = roomInfoH5.watchedShow?.textLarge;
-                      String text = '';
-                      if (textLarge != null) {
-                        text += textLarge;
-                      }
-                      if (liveTime != null) {
-                        if (text.isNotEmpty) {
-                          text += '  ';
-                        }
-                        final duration = DurationUtils.formatDurationBetween(
-                          liveTime * 1000,
-                          DateTime.now().millisecondsSinceEpoch,
-                        );
-                        text += duration.isEmpty ? '刚刚开播' : '开播$duration';
-                      }
-                      if (text.isEmpty) {
-                        return const SizedBox.shrink();
-                      }
-                      return Text(text, style: const TextStyle(fontSize: 12));
-                    }),
-                  ],
-                ),
-              ],
+      title: isFullScreen || plPlayerController.isDesktopPip
+          ? null
+          : Obx(
+              () {
+                RoomInfoH5Data? roomInfoH5 =
+                    _liveRoomController.roomInfoH5.value;
+                if (roomInfoH5 == null) {
+                  return const SizedBox.shrink();
+                }
+                return GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () =>
+                      Get.toNamed('/member?mid=${roomInfoH5.roomInfo?.uid}'),
+                  child: Row(
+                    spacing: 10,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      NetworkImgLayer(
+                        width: 34,
+                        height: 34,
+                        type: ImageType.avatar,
+                        src: roomInfoH5.anchorInfo!.baseInfo!.face,
+                      ),
+                      Flexible(
+                        child: Column(
+                          spacing: 1,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              spacing: 10,
+                              mainAxisSize: .min,
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    roomInfoH5.anchorInfo!.baseInfo!.uname!,
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                                _liveRoomController.onlineWidget,
+                              ],
+                            ),
+                            Row(
+                              spacing: 10,
+                              mainAxisSize: .min,
+                              children: [
+                                _liveRoomController.watchedWidget,
+                                _liveRoomController.timeWidget,
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
-          );
-        },
-      ),
       actions: [
         // IconButton(
         //   tooltip: '刷新',
@@ -567,7 +599,7 @@ class _LiveRoomPageState extends State<LiveRoomPage>
                   ],
                 ),
               ),
-              if (Utils.isMobile)
+              if (PlatformUtils.isMobile)
                 PopupMenuItem(
                   onTap: () => Utils.shareText(liveUrl),
                   child: Row(
@@ -644,8 +676,8 @@ class _LiveRoomPageState extends State<LiveRoomPage>
   Widget _buildBodyH(bool isFullScreen) {
     double videoWidth =
         clampDouble(maxHeight / maxWidth * 1.08, 0.56, 0.7) * maxWidth;
-    final rigthWidth = min(400.0, maxWidth - videoWidth - padding.horizontal);
-    videoWidth = maxWidth - rigthWidth - padding.horizontal;
+    final rightWidth = min(400.0, maxWidth - videoWidth - padding.horizontal);
+    videoWidth = maxWidth - rightWidth - padding.horizontal;
     final videoHeight = maxHeight - padding.top;
     final width = isFullScreen ? maxWidth : videoWidth;
     final height = isFullScreen ? maxHeight - padding.top : videoHeight;
@@ -669,7 +701,7 @@ class _LiveRoomPageState extends State<LiveRoomPage>
           Offstage(
             offstage: isFullScreen,
             child: SizedBox(
-              width: rigthWidth,
+              width: rightWidth,
               height: videoHeight,
               child: _buildBottomWidget,
             ),
@@ -700,7 +732,9 @@ class _LiveRoomPageState extends State<LiveRoomPage>
           ? PageView(
               key: pageKey,
               controller: _liveRoomController.pageController,
-              physics: const CustomTabBarViewClampingScrollPhysics(),
+              physics: const CustomTabBarViewScrollPhysics(
+                parent: ClampingScrollPhysics(),
+              ),
               onPageChanged: (value) =>
                   _liveRoomController.pageIndex.value = value,
               children: [
@@ -954,6 +988,8 @@ class LiveDanmaku extends StatefulWidget {
 
   @override
   State<LiveDanmaku> createState() => _LiveDanmakuState();
+
+  bool get notFullscreen => !isFullScreen || isPipMode;
 }
 
 class _LiveDanmakuState extends State<LiveDanmaku> {
@@ -962,23 +998,13 @@ class _LiveDanmakuState extends State<LiveDanmaku> {
   @override
   void didUpdateWidget(LiveDanmaku oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.isPipMode != widget.isPipMode ||
-        oldWidget.isFullScreen != widget.isFullScreen) {
-      _updateFontSize();
+    if (oldWidget.notFullscreen != widget.notFullscreen &&
+        !DanmakuOptions.sameFontScale) {
+      plPlayerController.danmakuController?.updateOption(
+        DanmakuOptions.get(notFullscreen: widget.notFullscreen),
+      );
     }
   }
-
-  void _updateFontSize() {
-    plPlayerController.danmakuController?.updateOption(
-      plPlayerController.danmakuController!.option.copyWith(
-        fontSize: _fontSize,
-      ),
-    );
-  }
-
-  double get _fontSize => !widget.isFullScreen || widget.isPipMode
-      ? 15 * plPlayerController.danmakuFontScale
-      : 15 * plPlayerController.danmakuFontScaleFS;
 
   @override
   Widget build(BuildContext context) {
@@ -994,22 +1020,7 @@ class _LiveDanmakuState extends State<LiveDanmaku> {
               widget.liveRoomController.danmakuController =
                   plPlayerController.danmakuController = e;
             },
-            option: DanmakuOption(
-              fontSize: _fontSize,
-              fontWeight: plPlayerController.danmakuFontWeight,
-              area: plPlayerController.showArea,
-              hideTop: plPlayerController.blockTypes.contains(5),
-              hideScroll: plPlayerController.blockTypes.contains(2),
-              hideBottom: plPlayerController.blockTypes.contains(4),
-              duration:
-                  plPlayerController.danmakuDuration /
-                  plPlayerController.playbackSpeed,
-              staticDuration:
-                  plPlayerController.danmakuStaticDuration /
-                  plPlayerController.playbackSpeed,
-              strokeWidth: plPlayerController.danmakuStrokeWidth,
-              lineHeight: plPlayerController.danmakuLineHeight,
-            ),
+            option: DanmakuOptions.get(notFullscreen: widget.notFullscreen),
           ),
         );
       },

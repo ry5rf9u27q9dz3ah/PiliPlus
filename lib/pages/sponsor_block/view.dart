@@ -4,16 +4,15 @@ import 'package:PiliPlus/common/widgets/pair.dart';
 import 'package:PiliPlus/http/constants.dart';
 import 'package:PiliPlus/http/init.dart';
 import 'package:PiliPlus/http/loading_state.dart';
+import 'package:PiliPlus/http/sponsor_block.dart';
 import 'package:PiliPlus/models/common/sponsor_block/segment_type.dart';
 import 'package:PiliPlus/models/common/sponsor_block/skip_type.dart';
+import 'package:PiliPlus/models_new/sponsor_block/user_info.dart';
 import 'package:PiliPlus/pages/setting/slide_color_picker.dart';
-import 'package:PiliPlus/utils/duration_utils.dart';
-import 'package:PiliPlus/utils/num_utils.dart';
 import 'package:PiliPlus/utils/page_utils.dart';
 import 'package:PiliPlus/utils/storage.dart';
 import 'package:PiliPlus/utils/storage_key.dart';
 import 'package:PiliPlus/utils/storage_pref.dart';
-import 'package:PiliPlus/utils/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show FilteringTextInputFormatter;
 import 'package:get/get.dart';
@@ -39,7 +38,7 @@ class _SponsorBlockPageState extends State<SponsorBlockPage> {
   String _blockServer = Pref.blockServer;
   bool _blockTrack = Pref.blockTrack;
   final _serverStatus = Rxn<bool>();
-  final _userInfo = LoadingState<_UserInfo>.loading().obs;
+  final _userInfo = LoadingState<UserInfo>.loading().obs;
 
   Box setting = GStorage.setting;
 
@@ -56,29 +55,16 @@ class _SponsorBlockPageState extends State<SponsorBlockPage> {
     super.dispose();
   }
 
-  void _checkServerStatus() {
-    Request().get('$_blockServer/api/status/uptime').then((res) {
-      _serverStatus.value =
-          res.statusCode == 200 &&
-          res.data is String &&
-          Utils.isStringNumeric(res.data);
-    });
+  Future<void> _checkServerStatus() async {
+    _serverStatus.value = (await SponsorBlock.uptimeStatus()).isSuccess;
   }
 
   Future<void> _getUserInfo() async {
-    final params = {
-      'userID': _userId,
-      'values': '["viewCount","minutesSaved","segmentCount"]',
-    };
-    final res = await Request().get(
-      '$_blockServer/api/userInfo',
-      queryParameters: params,
-    );
-    if (res.statusCode == 200) {
-      _userInfo.value = Success(_UserInfo.fromJson(res.data));
-    } else {
-      _userInfo.value = Error(res.data['message']);
-    }
+    _userInfo.value = await SponsorBlock.userInfo(const [
+      'viewCount',
+      'minutesSaved',
+      'segmentCount',
+    ], userId: _userId);
   }
 
   Widget _blockLimitItem(
@@ -147,7 +133,7 @@ class _SponsorBlockPageState extends State<SponsorBlockPage> {
     },
   );
 
-  Widget _aboudItem(TextStyle titleStyle, TextStyle subTitleStyle) => ListTile(
+  Widget _aboutItem(TextStyle titleStyle, TextStyle subTitleStyle) => ListTile(
     dense: true,
     title: Text('关于空降助手', style: titleStyle),
     subtitle: Text(_url, style: subTitleStyle),
@@ -165,30 +151,29 @@ class _SponsorBlockPageState extends State<SponsorBlockPage> {
         title: Text('用户ID', style: titleStyle),
         subtitle: Text(_userId, style: subTitleStyle),
         onTap: () {
-          final key = GlobalKey<FormState>();
+          final key = GlobalKey<FormFieldState<String>>();
           _textController.text = _userId;
           showDialog(
             context: context,
             builder: (_) {
               return AlertDialog(
                 title: Text('用户ID', style: titleStyle),
-                content: Form(
+                content: TextFormField(
                   key: key,
-                  child: TextFormField(
-                    minLines: 1,
-                    maxLines: 4,
-                    autofocus: true,
-                    controller: _textController,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z\d]+')),
-                    ],
-                    validator: (value) {
-                      if ((value?.length ?? -1) < 30) {
-                        return '用户ID要求至少为30个字符长度的纯字符串';
-                      }
-                      return null;
-                    },
-                  ),
+                  minLines: 1,
+                  maxLines: 4,
+                  autofocus: true,
+                  controller: _textController,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z\d]+')),
+                  ],
+                  decoration: const InputDecoration(errorMaxLines: 2),
+                  validator: (value) {
+                    if ((value?.length ?? -1) < 30) {
+                      return '用户ID要求至少为30个字符长度的纯字符串';
+                    }
+                    return null;
+                  },
                 ),
                 actions: [
                   TextButton(
@@ -309,7 +294,7 @@ class _SponsorBlockPageState extends State<SponsorBlockPage> {
         ),
         subtitle: switch (_userInfo.value) {
           Loading() => const SizedBox.shrink(),
-          Success<_UserInfo>(:final response) => Text(
+          Success<UserInfo>(:final response) => Text(
             response.toString(),
             style: subTitleStyle,
           ),
@@ -460,7 +445,7 @@ class _SponsorBlockPageState extends State<SponsorBlockPage> {
         content: SlideColorPicker(
           color: color,
           showResetBtn: true,
-          callback: (Color? color) {
+          onChanged: (Color? color) {
             _blockColor[index] = color ?? item.first.color;
             setting.put(
               SettingBoxKey.blockColor,
@@ -535,7 +520,7 @@ class _SponsorBlockPageState extends State<SponsorBlockPage> {
             child: _blockServerItem(theme, titleStyle, subTitleStyle),
           ),
           dividerL,
-          SliverToBoxAdapter(child: _aboudItem(titleStyle, subTitleStyle)),
+          SliverToBoxAdapter(child: _aboutItem(titleStyle, subTitleStyle)),
           dividerL,
           SliverToBoxAdapter(
             child: SizedBox(
@@ -612,32 +597,38 @@ class _SponsorBlockPageState extends State<SponsorBlockPage> {
                         .toList(),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            item.second.title,
-                            style: TextStyle(
-                              height: 1,
-                              fontSize: 14,
-                              color: isDisable
-                                  ? theme.colorScheme.outline.withValues(
-                                      alpha: 0.7,
-                                    )
-                                  : theme.colorScheme.secondary,
+                      child: Text.rich(
+                        style: TextStyle(
+                          height: 1,
+                          fontSize: 14,
+                          color: isDisable
+                              ? theme.colorScheme.outline.withValues(
+                                  alpha: 0.7,
+                                )
+                              : theme.colorScheme.secondary,
+                        ),
+                        strutStyle: const StrutStyle(
+                          height: 1,
+                          leading: 0,
+                          fontSize: 14,
+                        ),
+                        TextSpan(
+                          children: [
+                            TextSpan(text: item.second.title),
+                            WidgetSpan(
+                              alignment: .middle,
+                              child: Icon(
+                                size: 14,
+                                MdiIcons.unfoldMoreHorizontal,
+                                color: isDisable
+                                    ? theme.colorScheme.outline.withValues(
+                                        alpha: 0.7,
+                                      )
+                                    : theme.colorScheme.secondary,
+                              ),
                             ),
-                            strutStyle: const StrutStyle(height: 1, leading: 0),
-                          ),
-                          Icon(
-                            MdiIcons.unfoldMoreHorizontal,
-                            size: MediaQuery.textScalerOf(context).scale(14),
-                            color: isDisable
-                                ? theme.colorScheme.outline.withValues(
-                                    alpha: 0.7,
-                                  )
-                                : theme.colorScheme.secondary,
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   );
@@ -655,36 +646,5 @@ class _SponsorBlockPageState extends State<SponsorBlockPage> {
         );
       },
     );
-  }
-}
-
-class _UserInfo {
-  final int viewCount;
-  final double minutesSaved;
-  final int segmentCount;
-
-  const _UserInfo({
-    required this.viewCount,
-    required this.minutesSaved,
-    required this.segmentCount,
-  });
-
-  factory _UserInfo.fromJson(Map<String, dynamic> json) => _UserInfo(
-    viewCount: json['viewCount'],
-    minutesSaved: (json['minutesSaved'] as num).toDouble(),
-    segmentCount: json['segmentCount'],
-  );
-
-  @override
-  String toString() {
-    String minutes = DurationUtils.formatTimeDuration(
-      Duration(minutes: minutesSaved.round()),
-    );
-    if (minutes.isEmpty) {
-      minutes = '0分钟';
-    }
-    return ('您提交了 ${NumUtils.formatPositiveDecimal(segmentCount)} 片段\n'
-        '您为大家节省了 ${NumUtils.formatPositiveDecimal(viewCount)} 片段\n'
-        '($minutes 的生命)');
   }
 }

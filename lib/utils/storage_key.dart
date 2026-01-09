@@ -1,9 +1,7 @@
 // ignore_for_file: constant_identifier_names
 
-abstract class SettingBoxKey {
+abstract final class SettingBoxKey {
   static const String btmProgressBehavior = 'btmProgressBehavior',
-      defaultVideoSpeed = 'defaultVideoSpeed',
-      autoUpgradeEnable = 'autoUpgradeEnable',
       defaultVideoQa = 'defaultVideoQa',
       defaultVideoQaCellular = 'defaultVideoQaCellular',
       defaultAudioQa = 'defaultAudioQa',
@@ -20,15 +18,15 @@ abstract class SettingBoxKey {
       hardwareDecoding = 'hardwareDecoding',
       videoSync = 'videoSync',
       p1080 = 'p1080',
-      enableAutoBrightness = 'enableAutoBrightness',
       enableAutoEnter = 'enableAutoEnter',
       enableAutoExit = 'enableAutoExit',
       enableOnlineTotal = 'enableOnlineTotal',
-      showSuperChat = 'showSuperChat',
+      superChatType = 'superChatType',
       keyboardControl = 'keyboardControl',
       pauseOnMinimize = 'pauseOnMinimize',
       pgcSkipType = 'pgcSkipType',
-      audioPlayMode = 'audioPlayMode';
+      audioPlayMode = 'audioPlayMode',
+      showBatteryLevel = 'showBatteryLevel';
 
   static const String enableVerticalExpand = 'enableVerticalExpand',
       feedBackEnable = 'feedBackEnable',
@@ -77,8 +75,8 @@ abstract class SettingBoxKey {
       showRelatedVideo = 'showRelatedVideo',
       showVideoReply = 'showVideoReply',
       showBangumiReply = 'showBangumiReply',
-      alwaysExapndIntroPanel = 'alwaysExapndIntroPanel',
-      exapndIntroPanelH = 'exapndIntroPanelH',
+      alwaysExpandIntroPanel = 'alwaysExapndIntroPanel',
+      expandIntroPanelH = 'exapndIntroPanelH',
       horizontalSeasonPanel = 'horizontalSeasonPanel',
       horizontalMemberPage = 'horizontalMemberPage',
       replyLengthLimit = 'replyLengthLimit',
@@ -147,7 +145,8 @@ abstract class SettingBoxKey {
       enablePlayAll = 'enablePlayAll',
       enableTapDm = 'enableTapDm',
       setSystemBrightness = 'setSystemBrightness',
-      downloadPath = 'downloadPath';
+      downloadPath = 'downloadPath',
+      followOrderType = 'followOrderType';
 
   static const String minimizeOnExit = 'minimizeOnExit',
       windowSize = 'windowSize',
@@ -161,7 +160,7 @@ abstract class SettingBoxKey {
       enableDragSubtitle = 'enableDragSubtitle',
       subtitlePaddingH = 'subtitlePaddingH',
       subtitlePaddingB = 'subtitlePaddingB',
-      subtitleBgOpaticy = 'subtitleBgOpaticy',
+      subtitleBgOpacity = 'subtitleBgOpaticy',
       subtitleStrokeWidth = 'subtitleStrokeWidth',
       subtitleFontScale = 'subtitleFontScale',
       subtitleFontScaleFS = 'subtitleFontScaleFS',
@@ -185,7 +184,6 @@ abstract class SettingBoxKey {
       enableShowLiveDanmaku = 'enableShowLiveDanmaku',
       pipNoDanmaku = 'pipNoDanmaku',
       showVipDanmaku = 'showVipDanmaku',
-      showSpecialDanmaku = 'showSpecialDanmaku',
       mergeDanmaku = 'mergeDanmaku',
       danmakuWeight = 'danmakuWeight',
       danmakuBlockType = 'danmakuBlockType',
@@ -196,6 +194,7 @@ abstract class SettingBoxKey {
       danmakuDuration = 'danmakuDuration',
       danmakuStaticDuration = 'danmakuStaticDuration',
       danmakuMassiveMode = 'danmakuMassiveMode',
+      danmakuFixedV = 'danmakuFixedV',
       danmakuLineHeight = 'danmakuLineHeight',
       strokeWidth = 'strokeWidth',
       fontWeight = 'fontWeight';
@@ -207,9 +206,9 @@ abstract class SettingBoxKey {
       defaultTextScale = 'textScale',
       dynamicColor = 'dynamicColor',
       customColor = 'customColor',
-      enableSingleRow = 'enableSingleRow',
       displayMode = 'displayMode',
       smallCardWidth = 'smallCardWidth',
+      recommendCardWidth = 'recommendCardWidth',
       dynamicsWaterfallFlow = 'dynamicsWaterfallFlow',
       upPanelPosition = 'upPanelPosition',
       dynamicsShowAllFollowedUp = 'dynamicsShowAllFollowedUp',
@@ -223,15 +222,13 @@ abstract class SettingBoxKey {
       dynamicBadgeMode = 'dynamicBadgeMode',
       msgBadgeMode = 'msgBadgeMode',
       msgUnReadTypeV2 = 'msgUnReadTypeV2',
-      hiddenSettingUnlocked = 'hiddenSettingUnlocked',
-      enableGradientBg = 'enableGradientBg',
       navBarSort = 'navBarSort',
       tempPlayerConf = 'tempPlayerConf',
       reduceLuxColor = 'reduceLuxColor',
       liveCdnUrl = 'liveCdnUrl';
 }
 
-abstract class LocalCacheKey {
+abstract final class LocalCacheKey {
   static const String historyPause = 'historyPause',
       blackMids = 'blackMids',
       danmakuFilterRules = 'danmakuFilterRules',
@@ -240,11 +237,8 @@ abstract class LocalCacheKey {
       buvid = 'buvid';
 }
 
-abstract class VideoBoxKey {
-  static const String videoFit = 'videoFit',
-      videoBrightness = 'videoBrightness',
-      videoSpeed = 'videoSpeed',
-      playRepeat = 'playRepeat',
+abstract final class VideoBoxKey {
+  static const String playRepeat = 'playRepeat',
       playSpeedDefault = 'playSpeedDefault',
       longPressSpeedDefault = 'longPressSpeedDefault',
       speedsList = 'speedsList',

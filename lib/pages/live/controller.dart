@@ -7,9 +7,10 @@ import 'package:PiliPlus/models_new/live/live_feed_index/data.dart';
 import 'package:PiliPlus/models_new/live/live_second_list/data.dart';
 import 'package:PiliPlus/models_new/live/live_second_list/tag.dart';
 import 'package:PiliPlus/pages/common/common_list_controller.dart';
+import 'package:PiliPlus/services/account_service.dart';
 import 'package:get/get.dart';
 
-class LiveController extends CommonListController {
+class LiveController extends CommonListController with AccountMixin {
   @override
   void onInit() {
     super.onInit();
@@ -47,7 +48,7 @@ class LiveController extends CommonListController {
   bool customHandleResponse(bool isRefresh, Success response) {
     if (isRefresh) {
       final res = response.response;
-      if (res case LiveIndexData data) {
+      if (res case final LiveIndexData data) {
         if (data.hasMore == 0) {
           isEnd = true;
         }
@@ -55,7 +56,7 @@ class LiveController extends CommonListController {
           first: data.followItem,
           second: data.areaItem,
         );
-      } else if (res case LiveSecondData data) {
+      } else if (res case final LiveSecondData data) {
         count = data.count;
         newTags = data.newTags;
         if (sortType != null) {
@@ -140,4 +141,7 @@ class LiveController extends CommonListController {
     isEnd = false;
     queryData();
   }
+
+  @override
+  void onChangeAccount(bool isLogin) => onReload();
 }

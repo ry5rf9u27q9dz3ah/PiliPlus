@@ -503,7 +503,9 @@ class _InteractiveViewerState extends State<InteractiveViewer>
   final GlobalKey _childKey = GlobalKey();
   final GlobalKey _parentKey = GlobalKey();
   Animation<Offset>? _animation;
+  CurvedAnimation? _curvedAnimation;
   Animation<double>? _scaleAnimation;
+  CurvedAnimation? _curvedScaleAnimation;
   late Offset _scaleAnimationFocalPoint;
   late AnimationController _controller;
   late AnimationController _scaleController;
@@ -740,7 +742,7 @@ class _InteractiveViewerState extends State<InteractiveViewer>
   // with GestureDetector's scale gesture.
   void _onScaleStart(ScaleStartDetails details) {
     if (widget.isAnimating?.call() == true ||
-        (details.pointerCount < 2 && _transformer.value.row0.x == 1.0)) {
+        (details.pointerCount < 2 && _transformer.value.storage[0] == 1.0)) {
       widget.onPanStart?.call(details);
       return;
     }
@@ -773,7 +775,7 @@ class _InteractiveViewerState extends State<InteractiveViewer>
   // handled with GestureDetector's scale gesture.
   void _onScaleUpdate(ScaleUpdateDetails details) {
     if (widget.isAnimating?.call() == true ||
-        (details.pointerCount < 2 && _transformer.value.row0.x == 1.0)) {
+        (details.pointerCount < 2 && _transformer.value.storage[0] == 1.0)) {
       widget.onPanUpdate?.call(details);
       return;
     }
@@ -873,11 +875,11 @@ class _InteractiveViewerState extends State<InteractiveViewer>
   // Handle the end of a gesture of _GestureType. All of pan, scale, and rotate
   // are handled with GestureDetector's scale gesture.
   void _onScaleEnd(ScaleEndDetails details) {
-    if (_transformer.value.row0.x == 1.0) {
+    if (_transformer.value.storage[0] == 1.0) {
       widget.onReset?.call();
     }
     if (widget.isAnimating?.call() == true ||
-        (details.pointerCount < 2 && _transformer.value.row0.x == 1.0)) {
+        (details.pointerCount < 2 && _transformer.value.storage[0] == 1.0)) {
       widget.onPanEnd?.call(details);
       return;
     }
@@ -930,7 +932,10 @@ class _InteractiveViewerState extends State<InteractiveViewer>
                 frictionSimulationY.finalX,
               ),
             ).animate(
-              CurvedAnimation(parent: _controller, curve: Curves.decelerate),
+              _curvedAnimation ??= CurvedAnimation(
+                parent: _controller,
+                curve: Curves.decelerate,
+              ),
             );
         _controller.duration = Duration(milliseconds: (tFinal * 1000).round());
         _animation!.addListener(_handleInertiaAnimation);
@@ -956,7 +961,7 @@ class _InteractiveViewerState extends State<InteractiveViewer>
               begin: scale,
               end: frictionSimulation.x(tFinal),
             ).animate(
-              CurvedAnimation(
+              _curvedScaleAnimation ??= CurvedAnimation(
                 parent: _scaleController,
                 curve: Curves.decelerate,
               ),
@@ -1150,7 +1155,9 @@ class _InteractiveViewerState extends State<InteractiveViewer>
 
   @override
   void dispose() {
+    _curvedAnimation?.dispose();
     _controller.dispose();
+    _curvedScaleAnimation?.dispose();
     _scaleController.dispose();
     _transformer.removeListener(_handleTransformation);
     if (widget.transformationController == null) {

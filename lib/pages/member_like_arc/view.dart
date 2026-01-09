@@ -1,7 +1,7 @@
 import 'package:PiliPlus/common/constants.dart';
 import 'package:PiliPlus/common/skeleton/video_card_v.dart';
+import 'package:PiliPlus/common/widgets/flutter/refresh_indicator.dart';
 import 'package:PiliPlus/common/widgets/loading_widget/http_error.dart';
-import 'package:PiliPlus/common/widgets/refresh_indicator.dart';
 import 'package:PiliPlus/http/loading_state.dart';
 import 'package:PiliPlus/models_new/member/coin_like_arc/item.dart';
 import 'package:PiliPlus/pages/member_coin_arc/widgets/item.dart';
@@ -78,11 +78,11 @@ class _MemberLikeArcPageState extends State<MemberLikeArcPage> {
         itemCount: 16,
         itemBuilder: (context, index) => const VideoCardVSkeleton(),
       ),
-      Success(:var response) =>
-        response?.isNotEmpty == true
+      Success(:final response) =>
+        response != null && response.isNotEmpty
             ? SliverGrid.builder(
                 gridDelegate: gridDelegate,
-                itemCount: response!.length,
+                itemCount: response.length,
                 itemBuilder: (context, index) {
                   if (index == response.length - 1) {
                     _ctr.onLoadMore();
@@ -91,7 +91,7 @@ class _MemberLikeArcPageState extends State<MemberLikeArcPage> {
                 },
               )
             : HttpError(onReload: _ctr.onReload),
-      Error(:var errMsg) => HttpError(
+      Error(:final errMsg) => HttpError(
         errMsg: errMsg,
         onReload: _ctr.onReload,
       ),

@@ -1,14 +1,15 @@
 import 'package:PiliPlus/models_new/download/bili_download_entry_info.dart';
+import 'package:PiliPlus/pages/common/multi_select/base.dart'
+    show MultiSelectData;
 
-class DownloadPageInfo {
+class DownloadPageInfo with MultiSelectData {
   final String pageId;
   final String dirPath;
   final String title;
   String cover;
   int sortKey;
   final int? seasonType;
-  final List<BiliDownloadEntryInfo> entrys;
-  BiliDownloadEntryInfo? entry;
+  final List<BiliDownloadEntryInfo> entries;
 
   DownloadPageInfo({
     required this.pageId,
@@ -17,7 +18,6 @@ class DownloadPageInfo {
     required this.cover,
     required this.sortKey,
     this.seasonType,
-    required this.entrys,
-    this.entry,
+    required this.entries,
   });
 }

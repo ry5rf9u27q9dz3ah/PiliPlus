@@ -6,16 +6,18 @@ import 'package:PiliPlus/common/widgets/loading_widget/loading_widget.dart';
 import 'package:PiliPlus/common/widgets/scroll_physics.dart';
 import 'package:PiliPlus/http/loading_state.dart';
 import 'package:PiliPlus/pages/login/controller.dart';
-import 'package:PiliPlus/utils/extension.dart';
+import 'package:PiliPlus/utils/extension/size_ext.dart';
+import 'package:PiliPlus/utils/extension/widget_ext.dart';
 import 'package:PiliPlus/utils/image_utils.dart';
 import 'package:PiliPlus/utils/page_utils.dart';
+import 'package:PiliPlus/utils/platform_utils.dart';
 import 'package:PiliPlus/utils/utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
-import 'package:get/get.dart' hide ContextExtensionss;
+import 'package:get/get.dart';
 import 'package:pretty_qr_code/pretty_qr_code.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -31,6 +33,12 @@ class _LoginPageState extends State<LoginPage> {
   // 二维码生成时间
   bool showPassword = false;
   GlobalKey globalKey = GlobalKey();
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _loginPageCtr.didChangeDependencies(context);
+  }
 
   Widget loginByQRCode(ThemeData theme) {
     return Column(
@@ -62,7 +70,7 @@ class _LoginPageState extends State<LoginPage> {
                 RenderRepaintBoundary boundary =
                     globalKey.currentContext!.findRenderObject()!
                         as RenderRepaintBoundary;
-                var image = await boundary.toImage(pixelRatio: 3);
+                final image = await boundary.toImage(pixelRatio: 3);
                 ByteData? byteData = await image.toByteData(
                   format: ImageByteFormat.png,
                 );
@@ -75,7 +83,7 @@ class _LoginPageState extends State<LoginPage> {
               icon: const Icon(Icons.save),
               label: const Text('保存至相册'),
             ),
-            if (kDebugMode || Utils.isMobile)
+            if (kDebugMode || PlatformUtils.isMobile)
               TextButton.icon(
                 onPressed: () => PageUtils.launchURL(
                   'bilibili://browser?url=${Uri.encodeComponent(_loginPageCtr.codeInfo.value.data.url)}',
@@ -98,7 +106,7 @@ class _LoginPageState extends State<LoginPage> {
                   semanticsLabel: '二维码加载中',
                 ),
               ),
-              Success(:var response) => Container(
+              Success(:final response) => Container(
                 width: 200,
                 height: 200,
                 color: Colors.white,
@@ -112,7 +120,7 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ),
               ),
-              Error(:var errMsg) => errorWidget(
+              Error(:final errMsg) => errorWidget(
                 errMsg: errMsg,
                 onReload: _loginPageCtr.refreshQRCode,
               ),
@@ -152,7 +160,7 @@ class _LoginPageState extends State<LoginPage> {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Text(
-            '请务必在 PiliPlus 开源仓库等可信渠道下载安装。',
+            '请务必在 ${Constants.appName} 开源仓库等可信渠道下载安装。',
             style: theme.textTheme.labelSmall!.copyWith(
               color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
             ),
@@ -343,7 +351,7 @@ class _LoginPageState extends State<LoginPage> {
             '根据 bilibili 官方登录接口规范，密码将在本地加盐、加密后传输。\n'
             '盐与公钥均由官方提供；以 RSA/ECB/PKCS1Padding 方式加密。\n'
             '账号密码仅用于该登录接口，不予保存；本地仅存储登录凭证。\n'
-            '请务必在 PiliPlus 开源仓库等可信渠道下载安装。',
+            '请务必在 ${Constants.appName} 开源仓库等可信渠道下载安装。',
             textAlign: TextAlign.center,
             style: theme.textTheme.labelSmall!.copyWith(
               color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
@@ -499,7 +507,7 @@ class _LoginPageState extends State<LoginPage> {
           child: Text(
             '手机号仅用于 bilibili 官方发送验证码与登录接口，不予保存；\n'
             '本地仅存储登录凭证。\n'
-            '请务必在 PiliPlus 开源仓库等可信渠道下载安装。',
+            '请务必在 ${Constants.appName} 开源仓库等可信渠道下载安装。',
             textAlign: TextAlign.center,
             style: theme.textTheme.labelSmall!.copyWith(
               color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
@@ -606,13 +614,7 @@ class _LoginPageState extends State<LoginPage> {
   Widget tabViewOuter(Widget child) {
     return SingleChildScrollView(
       padding: padding,
-      child: Align(
-        alignment: Alignment.topCenter,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 600),
-          child: child,
-        ),
-      ),
+      child: child.constraintWidth(),
     );
   }
 }

@@ -1,13 +1,12 @@
 import 'package:PiliPlus/common/skeleton/video_card_h.dart';
-import 'package:PiliPlus/common/widgets/button/icon_button.dart';
-import 'package:PiliPlus/common/widgets/custom_sliver_persistent_header_delegate.dart';
+import 'package:PiliPlus/common/widgets/flutter/refresh_indicator.dart';
 import 'package:PiliPlus/common/widgets/image/network_img_layer.dart';
 import 'package:PiliPlus/common/widgets/loading_widget/http_error.dart';
 import 'package:PiliPlus/common/widgets/loading_widget/loading_widget.dart';
-import 'package:PiliPlus/common/widgets/refresh_indicator.dart';
 import 'package:PiliPlus/http/loading_state.dart';
 import 'package:PiliPlus/models/common/image_preview_type.dart';
 import 'package:PiliPlus/models/common/image_type.dart';
+import 'package:PiliPlus/models/common/member/user_info_type.dart';
 import 'package:PiliPlus/models/member/info.dart';
 import 'package:PiliPlus/models_new/space/space_archive/item.dart';
 import 'package:PiliPlus/models_new/video/video_detail/episode.dart';
@@ -18,7 +17,8 @@ import 'package:PiliPlus/pages/video/controller.dart';
 import 'package:PiliPlus/pages/video/introduction/ugc/controller.dart';
 import 'package:PiliPlus/pages/video/member/controller.dart';
 import 'package:PiliPlus/utils/accounts.dart';
-import 'package:PiliPlus/utils/extension.dart';
+import 'package:PiliPlus/utils/extension/num_ext.dart';
+import 'package:PiliPlus/utils/extension/theme_ext.dart';
 import 'package:PiliPlus/utils/num_utils.dart';
 import 'package:PiliPlus/utils/page_utils.dart';
 import 'package:PiliPlus/utils/request_utils.dart';
@@ -64,7 +64,7 @@ class _HorizontalMemberPageState extends State<HorizontalMemberPage> {
       final index = res.response?.indexWhere((e) => e.bvid == _bvid) ?? -1;
       if (index != -1) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          _controller.scrollController.jumpTo(100.0 * index + 40);
+          _controller.scrollController.jumpTo(100.0 * index);
         });
       }
     }
@@ -81,23 +81,10 @@ class _HorizontalMemberPageState extends State<HorizontalMemberPage> {
   Widget _buildUserPage(ThemeData theme, LoadingState userState) {
     return switch (userState) {
       Loading() => loadingWidget,
-      Success(:var response) => Column(
+      Success(:final response) => Column(
         children: [
-          const SizedBox(height: 4),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              iconButton(
-                context: context,
-                onPressed: Get.back,
-                tooltip: '关闭',
-                icon: const Icon(Icons.clear),
-                size: 32,
-              ),
-              const SizedBox(width: 16),
-            ],
-          ),
           _buildUserInfo(theme, response),
+          _buildHeader(theme),
           Expanded(
             child: refreshIndicator(
               onRefresh: _controller.onRefresh,
@@ -105,7 +92,6 @@ class _HorizontalMemberPageState extends State<HorizontalMemberPage> {
                 controller: _controller.scrollController,
                 physics: const AlwaysScrollableScrollPhysics(),
                 slivers: [
-                  _buildSliverHeader(theme),
                   SliverPadding(
                     padding: EdgeInsets.only(
                       bottom: MediaQuery.viewPaddingOf(context).bottom + 100,
@@ -123,7 +109,7 @@ class _HorizontalMemberPageState extends State<HorizontalMemberPage> {
           ),
         ],
       ),
-      Error(:var errMsg) => scrollErrorWidget(
+      Error(:final errMsg) => scrollErrorWidget(
         controller: _controller.scrollController,
         errMsg: errMsg,
         onReload: () {
@@ -134,53 +120,45 @@ class _HorizontalMemberPageState extends State<HorizontalMemberPage> {
     };
   }
 
-  Widget _buildSliverHeader(ThemeData theme) {
-    return SliverPersistentHeader(
-      pinned: false,
-      floating: true,
-      delegate: CustomSliverPersistentHeaderDelegate(
-        extent: 40,
-        bgColor: theme.colorScheme.surface,
-        child: Container(
-          height: 40,
-          padding: const EdgeInsets.fromLTRB(12, 0, 6, 0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Obx(
-                () {
-                  final count = _controller.count.value;
-                  return Text(
-                    count != -1 ? '共$count视频' : '',
-                    style: const TextStyle(fontSize: 13),
-                  );
-                },
+  Widget _buildHeader(ThemeData theme) {
+    return Container(
+      height: 40,
+      padding: const EdgeInsets.fromLTRB(12, 0, 6, 0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Obx(
+            () {
+              final count = _controller.count.value;
+              return Text(
+                count != -1 ? '共$count视频' : '',
+                style: const TextStyle(fontSize: 13),
+              );
+            },
+          ),
+          SizedBox(
+            height: 35,
+            child: TextButton.icon(
+              onPressed: () => _controller
+                ..lastAid = widget.videoDetailController.aid.toString()
+                ..queryBySort(),
+              icon: Icon(
+                Icons.sort,
+                size: 16,
+                color: theme.colorScheme.secondary,
               ),
-              SizedBox(
-                height: 35,
-                child: TextButton.icon(
-                  onPressed: () => _controller
-                    ..lastAid = widget.videoDetailController.aid.toString()
-                    ..queryBySort(),
-                  icon: Icon(
-                    Icons.sort,
-                    size: 16,
+              label: Obx(
+                () => Text(
+                  _controller.order.value == 'pubdate' ? '最新发布' : '最多播放',
+                  style: TextStyle(
+                    fontSize: 13,
                     color: theme.colorScheme.secondary,
-                  ),
-                  label: Obx(
-                    () => Text(
-                      _controller.order.value == 'pubdate' ? '最新发布' : '最多播放',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: theme.colorScheme.secondary,
-                      ),
-                    ),
                   ),
                 ),
               ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -190,13 +168,13 @@ class _HorizontalMemberPageState extends State<HorizontalMemberPage> {
     LoadingState<List<SpaceArchiveItem>?> loadingState,
   ) {
     return switch (loadingState) {
-      Loading() => SliverPrototypeExtentList.builder(
+      Loading() => SliverFixedExtentList.builder(
         itemCount: 10,
         itemBuilder: (_, _) => const VideoCardHSkeleton(),
-        prototypeItem: const VideoCardHSkeleton(),
+        itemExtent: 100,
       ),
-      Success(:var response) =>
-        response?.isNotEmpty == true
+      Success(:final response) =>
+        response != null && response.isNotEmpty
             ? SliverFixedExtentList.builder(
                 itemBuilder: (context, index) {
                   if (index == response.length - 1 && _controller.hasNext) {
@@ -221,11 +199,11 @@ class _HorizontalMemberPageState extends State<HorizontalMemberPage> {
                     ),
                   );
                 },
-                itemCount: response!.length,
+                itemCount: response.length,
                 itemExtent: 100,
               )
             : HttpError(onReload: _controller.onReload),
-      Error(:var errMsg) => HttpError(
+      Error(:final errMsg) => HttpError(
         errMsg: errMsg,
         onReload: _controller.onReload,
       ),
@@ -233,14 +211,15 @@ class _HorizontalMemberPageState extends State<HorizontalMemberPage> {
   }
 
   Widget _buildUserInfo(ThemeData theme, MemberInfoModel memberInfoModel) {
-    return Row(
-      children: [
-        const SizedBox(width: 16),
-        _buildAvatar(memberInfoModel.face!),
-        const SizedBox(width: 10),
-        Expanded(child: _buildInfo(theme, memberInfoModel)),
-        const SizedBox(width: 16),
-      ],
+    return Padding(
+      padding: const .only(left: 16, top: 10, right: 16, bottom: 3),
+      child: Row(
+        spacing: 10,
+        children: [
+          _buildAvatar(memberInfoModel.face!),
+          Expanded(child: _buildInfo(theme, memberInfoModel)),
+        ],
+      ),
     );
   }
 
@@ -267,57 +246,45 @@ class _HorizontalMemberPageState extends State<HorizontalMemberPage> {
           ),
           const SizedBox(width: 8),
           Image.asset(
-            'assets/images/lv/lv${memberInfoModel.isSeniorMember == 1 ? '6_s' : memberInfoModel.level}.png',
+            Utils.levelName(
+              memberInfoModel.level!,
+              isSeniorMember: memberInfoModel.isSeniorMember == 1,
+            ),
             height: 11,
+            cacheHeight: 11.cacheSize(context),
           ),
         ],
       ),
-      const SizedBox(height: 2),
+      const SizedBox(height: 4),
       Obx(
         () => Row(
-          children: List.generate(5, (index) {
-            if (index.isEven) {
-              return _buildChildInfo(
-                theme: theme,
-                title: const ['粉丝', '关注', '获赞'][index ~/ 2],
-                num: index == 0
-                    ? _controller.userStat['follower'] != null
-                          ? NumUtils.numFormat(_controller.userStat['follower'])
-                          : ''
-                    : index == 2
-                    ? _controller.userStat['following'] ?? ''
-                    : _controller.userStat['likes'] != null
-                    ? NumUtils.numFormat(_controller.userStat['likes'])
-                    : '',
-                onTap: () {
-                  if (index == 0) {
-                    FansPage.toFansPage(
-                      mid: widget.mid,
-                      name: memberInfoModel.name,
-                    );
-                  } else if (index == 2) {
-                    FollowPage.toFollowPage(
-                      mid: widget.mid,
-                      name: memberInfoModel.name,
-                    );
-                  }
-                },
-              );
-            } else {
-              return SizedBox(
-                height: 10,
-                width: 20,
-                child: VerticalDivider(
-                  width: 1,
-                  color: theme.colorScheme.outline,
+          children: UserInfoType.values
+              .map(
+                (e) => _buildChildInfo(
+                  theme: theme,
+                  type: e,
+                  userStat: _controller.userStat,
+                  memberInfoModel: memberInfoModel,
                 ),
-              );
-            }
-          }),
+              )
+              .expand((child) sync* {
+                yield SizedBox(
+                  height: 10,
+                  width: 20,
+                  child: VerticalDivider(
+                    width: 1,
+                    color: theme.colorScheme.outline,
+                  ),
+                );
+                yield child;
+              })
+              .skip(1)
+              .toList(),
         ),
       ),
-      const SizedBox(height: 2),
+      const SizedBox(height: 8),
       Row(
+        spacing: 8,
         children: [
           Expanded(
             child: FilledButton.tonal(
@@ -329,6 +296,7 @@ class _HorizontalMemberPageState extends State<HorizontalMemberPage> {
                     ? theme.colorScheme.outline
                     : null,
                 padding: EdgeInsets.zero,
+                tapTargetSize: .shrinkWrap,
                 visualDensity: const VisualDensity(vertical: -2),
               ),
               onPressed: () {
@@ -343,7 +311,7 @@ class _HorizontalMemberPageState extends State<HorizontalMemberPage> {
                     context: context,
                     mid: widget.mid,
                     isFollow: memberInfoModel.isFollowed ?? false,
-                    callback: (attribute) {
+                    afterMod: (attribute) {
                       _controller
                         ..userState.value.data.isFollowed = attribute != 0
                         ..userState.refresh();
@@ -362,11 +330,11 @@ class _HorizontalMemberPageState extends State<HorizontalMemberPage> {
               ),
             ),
           ),
-          const SizedBox(width: 8),
           Expanded(
             child: OutlinedButton(
               style: OutlinedButton.styleFrom(
                 padding: EdgeInsets.zero,
+                tapTargetSize: .shrinkWrap,
                 visualDensity: const VisualDensity(vertical: -2),
               ),
               onPressed: () => Get.toNamed('/member?mid=${widget.mid}'),
@@ -384,14 +352,36 @@ class _HorizontalMemberPageState extends State<HorizontalMemberPage> {
 
   Widget _buildChildInfo({
     required ThemeData theme,
-    required String title,
-    required dynamic num,
-    required VoidCallback onTap,
+    required UserInfoType type,
+    required Map userStat,
+    required MemberInfoModel memberInfoModel,
   }) {
+    dynamic num;
+    VoidCallback? onTap;
+    switch (type) {
+      case UserInfoType.fan:
+        num = userStat['follower'] != null
+            ? NumUtils.numFormat(userStat['follower'])
+            : '';
+        onTap = () => FansPage.toFansPage(
+          mid: widget.mid,
+          name: memberInfoModel.name,
+        );
+      case UserInfoType.follow:
+        num = userStat['following'] ?? '';
+        onTap = () => FollowPage.toFollowPage(
+          mid: widget.mid,
+          name: memberInfoModel.name,
+        );
+      case UserInfoType.like:
+        num = userStat['likes'] != null
+            ? NumUtils.numFormat(userStat['likes'])
+            : '';
+    }
     return GestureDetector(
       onTap: onTap,
       child: Text(
-        '$num$title',
+        '$num${type.title}',
         style: TextStyle(
           fontSize: 14,
           color: theme.colorScheme.outline,

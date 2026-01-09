@@ -18,8 +18,12 @@ import 'package:PiliPlus/pages/video/introduction/ugc/widgets/page.dart';
 import 'package:PiliPlus/services/download/download_service.dart';
 import 'package:PiliPlus/utils/date_utils.dart';
 import 'package:PiliPlus/utils/duration_utils.dart';
+import 'package:PiliPlus/utils/extension/num_ext.dart';
 import 'package:PiliPlus/utils/id_utils.dart';
+import 'package:PiliPlus/utils/platform_utils.dart';
 import 'package:PiliPlus/utils/storage_pref.dart';
+import 'package:PiliPlus/utils/utils.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, kReleaseMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
@@ -49,7 +53,7 @@ class DownloadPanel extends StatefulWidget {
   final VideoDetailController videoDetailController;
   final String heroTag;
   final UgcIntroController? ugcIntroController;
-  final Set<int?> cidSet;
+  final Set<int> cidSet;
 
   @override
   State<DownloadPanel> createState() => _DownloadPanelState();
@@ -96,6 +100,7 @@ class _DownloadPanelState extends State<DownloadPanel> {
   }
 
   Widget _buildHeader(ThemeData theme) {
+    final textStyle = TextStyle(color: theme.colorScheme.onSurfaceVariant);
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 0, 12),
       child: Row(
@@ -103,7 +108,7 @@ class _DownloadPanelState extends State<DownloadPanel> {
         children: [
           Text(
             '最高画质',
-            style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+            style: textStyle,
           ),
           Builder(
             builder: (context) => PopupMenuButton<VideoQuality>(
@@ -140,6 +145,22 @@ class _DownloadPanelState extends State<DownloadPanel> {
               ),
             ),
           ),
+          if (kDebugMode || PlatformUtils.isMobile) ...[
+            const Spacer(),
+            StreamBuilder(
+              stream: Connectivity().onConnectivityChanged,
+              builder: (context, snapshot) {
+                if (snapshot.data case final data?) {
+                  final network = data.contains(ConnectivityResult.wifi)
+                      ? 'WIFI'
+                      : '数据';
+                  return Text('当前网络：$network', style: textStyle);
+                }
+                return const SizedBox.shrink();
+              },
+            ),
+            const SizedBox(width: 4),
+          ],
         ],
       ),
     );
@@ -208,6 +229,7 @@ class _DownloadPanelState extends State<DownloadPanel> {
   }
 
   late final int? vipStatus = Pref.userInfoCache?.vipStatus;
+  @pragma('vm:notify-debugger-on-exception')
   bool _onDownload({
     required int index,
     required ugc.BaseEpisodeItem episode,
@@ -224,7 +246,7 @@ class _DownloadPanelState extends State<DownloadPanel> {
 
     if (cidSet.contains(cid)) {
       if (kDebugMode) {
-        SmartDialog.showToast('downloded');
+        SmartDialog.showToast('downloaded');
       }
       return false;
     }
@@ -238,21 +260,24 @@ class _DownloadPanelState extends State<DownloadPanel> {
       }
     }
 
-    if (episode is ugc.EpisodeItem && episode.pages!.length > 1) {
-      if (isFromList && kDebugMode) {
-        SmartDialog.showToast('hasParts');
-      }
-      if (isDownloadAll) {
-        for (int i = 0; i < episode.pages!.length; i++) {
-          _onDownload(
-            index: i,
-            episode: episode.pages![i],
-            parent: episode,
-          );
+    if (episode is ugc.EpisodeItem) {
+      final pages = episode.pages!;
+      if (pages.length > 1) {
+        if (isFromList && kDebugMode) {
+          SmartDialog.showToast('hasParts');
         }
-        return true;
+        if (isDownloadAll) {
+          for (int i = 0; i < pages.length; i++) {
+            _onDownload(
+              index: i,
+              episode: pages[i],
+              parent: episode,
+            );
+          }
+          return true;
+        }
+        return false;
       }
-      return false;
     }
 
     try {
@@ -284,8 +309,8 @@ class _DownloadPanelState extends State<DownloadPanel> {
       }
       cidSet.add(cid);
       return true;
-    } catch (e) {
-      if (kDebugMode) rethrow;
+    } catch (e, s) {
+      Utils.reportError(e, s);
       SmartDialog.showToast(e.toString());
     }
     return false;
@@ -409,6 +434,7 @@ class _DownloadPanelState extends State<DownloadPanel> {
                           'assets/images/live.png',
                           color: primary,
                           height: 12,
+                          cacheHeight: 12.cacheSize(context),
                           semanticLabel: '正在播放：',
                         ),
                       Expanded(
@@ -514,7 +540,7 @@ class _DownloadPanelState extends State<DownloadPanel> {
                       isDownloadAll: true,
                     );
                   }
-                  setState(() {});
+                  if (mounted) setState(() {});
                 },
               );
             },

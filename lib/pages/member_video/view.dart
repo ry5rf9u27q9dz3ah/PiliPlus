@@ -1,6 +1,6 @@
 import 'package:PiliPlus/common/widgets/custom_sliver_persistent_header_delegate.dart';
+import 'package:PiliPlus/common/widgets/flutter/refresh_indicator.dart';
 import 'package:PiliPlus/common/widgets/loading_widget/http_error.dart';
-import 'package:PiliPlus/common/widgets/refresh_indicator.dart';
 import 'package:PiliPlus/common/widgets/scroll_physics.dart';
 import 'package:PiliPlus/http/loading_state.dart';
 import 'package:PiliPlus/models/common/member/contribute_type.dart';
@@ -163,8 +163,8 @@ class _MemberVideoState extends State<MemberVideo>
   ) {
     return switch (loadingState) {
       Loading() => gridSkeleton,
-      Success(:var response) =>
-        response?.isNotEmpty == true
+      Success(:final response) =>
+        response != null && response.isNotEmpty
             ? SliverMainAxisGroup(
                 slivers: [
                   SliverPersistentHeader(
@@ -267,12 +267,12 @@ class _MemberVideoState extends State<MemberVideo>
                         fromViewAid: _controller.fromViewAid,
                       );
                     },
-                    itemCount: response!.length,
+                    itemCount: response.length,
                   ),
                 ],
               )
             : HttpError(onReload: _controller.onReload),
-      Error(:var errMsg) => HttpError(
+      Error(:final errMsg) => HttpError(
         errMsg: errMsg,
         onReload: _controller.onReload,
       ),

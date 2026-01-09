@@ -1,13 +1,25 @@
 import 'dart:async';
 
+import 'package:PiliPlus/common/widgets/dialog/dialog.dart';
 import 'package:PiliPlus/models_new/download/download_info.dart';
+import 'package:PiliPlus/pages/common/multi_select/base.dart'
+    show BaseMultiSelectMixin;
 import 'package:PiliPlus/services/download/download_service.dart';
+import 'package:PiliPlus/utils/extension/iterable_ext.dart';
+import 'package:PiliPlus/utils/storage.dart';
+import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:get/get.dart';
 
-class DownloadPageController extends GetxController {
+class DownloadPageController extends GetxController
+    with BaseMultiSelectMixin<DownloadPageInfo> {
   final _downloadService = Get.find<DownloadService>();
   final pages = RxList<DownloadPageInfo>();
   final flag = RxInt(0);
+
+  @override
+  List<DownloadPageInfo> get list => pages;
+  @override
+  RxList<DownloadPageInfo> get state => pages;
 
   @override
   void onInit() {
@@ -35,22 +47,13 @@ class DownloadPageController extends GetxController {
       final page = list.firstWhereOrNull((e) => e.pageId == pageId);
       if (page != null) {
         final aSortKey = entry.sortKey;
-        if (!entry.isCompleted) {
-          if (page.entry case final lastEntry?) {
-            if (aSortKey < lastEntry.sortKey) {
-              page.entry = entry;
-            }
-          } else {
-            page.entry = entry;
-          }
-        }
         final bSortKey = page.sortKey;
         if (aSortKey < bSortKey) {
           page
             ..cover = entry.cover
             ..sortKey = aSortKey;
         }
-        page.entrys.add(entry);
+        page.entries.add(entry);
       } else {
         list.add(
           DownloadPageInfo(
@@ -60,13 +63,39 @@ class DownloadPageController extends GetxController {
             cover: entry.cover,
             sortKey: entry.sortKey,
             seasonType: entry.ep?.seasonType,
-            entrys: [entry],
-            entry: entry.isCompleted ? null : entry,
+            entries: [entry],
           ),
         );
       }
     }
     pages.value = list;
     flag.value++;
+  }
+
+  @override
+  void onRemove() {
+    showConfirmDialog(
+      context: Get.context!,
+      title: '确定删除选中视频？',
+      onConfirm: () async {
+        SmartDialog.showLoading();
+        final watchProgress = GStorage.watchProgress;
+        for (final page in allChecked) {
+          await watchProgress.deleteAll(
+            page.entries.map((e) => e.cid.toString()),
+          );
+          await _downloadService.deletePage(
+            pageDirPath: page.dirPath,
+            refresh: false,
+          );
+        }
+        _downloadService.flagNotifier.refresh();
+        if (enableMultiSelect.value) {
+          rxCount.value = 0;
+          enableMultiSelect.value = false;
+        }
+        SmartDialog.dismiss();
+      },
+    );
   }
 }

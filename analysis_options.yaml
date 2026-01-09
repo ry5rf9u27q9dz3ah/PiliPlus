@@ -16,8 +16,8 @@ analyzer:
     package_names: ignore
   exclude:
     - lib/grpc/bilibili/**
-    - lib/grpc/google/**
-    - lib/common/**
+    # - lib/grpc/google/**
+    # - lib/common/widgets/flutter/**
 
 formatter:
   trailing_commas: preserve
@@ -68,5 +68,13 @@ linter:
     - use_null_aware_elements
     - unnecessary_lambdas
     - use_is_even_rather_than_modulo
+    - unnecessary_async
+    - unnecessary_await_in_return
+    - unnecessary_getters_setters
+    - prefer_const_literals_to_create_immutables
+    - no_literal_bool_comparisons
+    - use_truncating_division
+    - use_string_buffers
+    - unnecessary_statements
 # Additional information about this file can be found at
 # https://dart.dev/guides/language/analysis-options

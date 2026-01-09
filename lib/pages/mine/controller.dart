@@ -19,22 +19,25 @@ import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:get/get.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
-class MineController
-    extends CommonDataController<FavFolderData, FavFolderData> {
+class MineController extends CommonDataController<FavFolderData, FavFolderData>
+    with AccountMixin {
+  @override
   AccountService accountService = Get.find<AccountService>();
 
-  int? favFoldercount;
+  int? favFolderCount;
 
   // 用户信息 头像、昵称、lv
-  Rx<UserInfoData> userInfo = UserInfoData().obs;
+  final Rx<UserInfoData> userInfo = UserInfoData().obs;
   // 用户状态 动态、关注、粉丝
-  Rx<UserStat> userStat = UserStat().obs;
+  final Rx<UserStat> userStat = const UserStat().obs;
 
-  Rx<ThemeType> themeType = ThemeType.system.obs;
-  static RxBool anonymity =
-      (Accounts.account.isNotEmpty && !Accounts.heartbeat.isLogin).obs;
+  Rx<ThemeType> themeType = Pref.themeType.obs;
+
   ThemeType get nextThemeType =>
       ThemeType.values[(themeType.value.index + 1) % ThemeType.values.length];
+
+  static RxBool anonymity =
+      (Accounts.account.isNotEmpty && !Accounts.heartbeat.isLogin).obs;
 
   late final list =
       <({IconData icon, double size, String title, VoidCallback onTap})>[
@@ -96,7 +99,7 @@ class MineController
   }
 
   Future<void> queryUserInfo() async {
-    var res = await UserHttp.userInfo();
+    final res = await UserHttp.userInfo();
     if (res.isSuccess) {
       UserInfoData data = res.data;
       if (data.isLogin == true) {
@@ -105,8 +108,6 @@ class MineController
           GStorage.userInfo.put('userInfoCache', data);
         }
         accountService
-          ..mid = data.mid!
-          ..name.value = data.uname!
           ..face.value = data.face!
           ..isLogin.value = true;
       } else {
@@ -125,7 +126,7 @@ class MineController
   }
 
   Future<void> queryUserStatOwner() async {
-    var res = await UserHttp.userStatOwner();
+    final res = await UserHttp.userStatOwner();
     if (res['status']) {
       userStat.value = res['data'];
     }
@@ -133,7 +134,7 @@ class MineController
 
   @override
   bool customHandleResponse(bool isRefresh, Success<FavFolderData> response) {
-    favFoldercount = response.response.count;
+    favFolderCount = response.response.count;
     loadingState.value = response;
     return true;
   }
@@ -143,7 +144,7 @@ class MineController
     return FavHttp.userfavFolder(
       pn: 1,
       ps: 20,
-      mid: accountService.mid,
+      mid: Accounts.main.mid,
     );
   }
 
@@ -286,9 +287,20 @@ class MineController
   @override
   Future<void> onRefresh() {
     if (!accountService.isLogin.value) {
-      return Future.value();
+      return Future.syncValue(null);
     }
     queryUserInfo();
     return super.onRefresh();
+  }
+
+  @override
+  void onChangeAccount(bool isLogin) {
+    if (isLogin) {
+      onRefresh();
+    } else {
+      userInfo.value = UserInfoData();
+      userStat.value = const UserStat();
+      loadingState.value = LoadingState.loading();
+    }
   }
 }

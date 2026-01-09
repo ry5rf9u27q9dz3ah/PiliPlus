@@ -111,7 +111,7 @@ class _MemberPageState extends State<MemberPage> {
     ),
     PopupMenuButton(
       icon: const Icon(Icons.more_vert),
-      itemBuilder: (BuildContext context) => <PopupMenuEntry>[
+      itemBuilder: (_) => <PopupMenuEntry>[
         if (_userController.account.isLogin &&
             _userController.account.mid != _mid) ...[
           PopupMenuItem(
@@ -326,7 +326,7 @@ class _MemberPageState extends State<MemberPage> {
     switch (userState) {
       case Loading():
         return const CircularProgressIndicator();
-      case Success<SpaceData?>(:var response):
+      case Success<SpaceData?>(:final response):
         if (response != null) {
           return DynamicSliverAppBarMedium(
             pinned: true,
@@ -354,7 +354,7 @@ class _MemberPageState extends State<MemberPage> {
             child: Text(_userController.username ?? ''),
           ),
         );
-      case Error(:var errMsg):
+      case Error(:final errMsg):
         return scrollErrorWidget(
           errMsg: errMsg,
           onReload: _userController.onReload,

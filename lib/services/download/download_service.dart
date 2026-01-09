@@ -15,7 +15,8 @@ import 'package:PiliPlus/models_new/video/video_detail/episode.dart' as ugc;
 import 'package:PiliPlus/models_new/video/video_detail/page.dart';
 import 'package:PiliPlus/pages/danmaku/controller.dart';
 import 'package:PiliPlus/services/download/download_manager.dart';
-import 'package:PiliPlus/utils/extension.dart';
+import 'package:PiliPlus/utils/extension/file_ext.dart';
+import 'package:PiliPlus/utils/extension/string_ext.dart';
 import 'package:PiliPlus/utils/id_utils.dart';
 import 'package:PiliPlus/utils/path_utils.dart';
 import 'package:flutter/foundation.dart';
@@ -33,10 +34,12 @@ class DownloadService extends GetxService {
 
   final _lock = Lock();
 
-  final flagNotifier = <void Function()>{};
-  final waitDownloadQueue = <BiliDownloadEntryInfo>[];
-  final downloadList = RxList<BiliDownloadEntryInfo>();
+  final flagNotifier = SetNotifier();
+  final waitDownloadQueue = RxList<BiliDownloadEntryInfo>();
+  final downloadList = <BiliDownloadEntryInfo>[];
 
+  int? _curCid;
+  int? get curCid => _curCid;
   final curDownload = Rxn<BiliDownloadEntryInfo>();
   void _updateCurStatus(DownloadStatus status) {
     if (curDownload.value != null) {
@@ -62,17 +65,17 @@ class DownloadService extends GetxService {
   }
 
   Future<void> _readDownloadList() async {
+    downloadList.clear();
     final downloadDir = Directory(await _getDownloadPath());
-    final list = <BiliDownloadEntryInfo>[];
     await for (final dir in downloadDir.list()) {
       if (dir is Directory) {
-        list.addAll(await _readDownloadDirectory(dir));
+        downloadList.addAll(await _readDownloadDirectory(dir));
       }
     }
-    downloadList.value = list
-      ..sort((a, b) => b.timeUpdateStamp.compareTo(a.timeUpdateStamp));
+    downloadList.sort((a, b) => b.timeUpdateStamp.compareTo(a.timeUpdateStamp));
   }
 
+  @pragma('vm:notify-debugger-on-exception')
   Future<List<BiliDownloadEntryInfo>> _readDownloadDirectory(
     Directory pageDir,
   ) async {
@@ -91,13 +94,12 @@ class DownloadService extends GetxService {
             final entry = BiliDownloadEntryInfo.fromJson(jsonDecode(entryJson))
               ..pageDirPath = pageDir.path
               ..entryDirPath = entryDir.path;
-            result.add(entry);
-            if (!entry.isCompleted) {
+            if (entry.isCompleted) {
+              result.add(entry);
+            } else {
               waitDownloadQueue.add(entry..status = DownloadStatus.wait);
             }
-          } catch (_) {
-            if (kDebugMode) rethrow;
-          }
+          } catch (_) {}
         }
       }
     }
@@ -113,6 +115,9 @@ class DownloadService extends GetxService {
   ) {
     final cid = page.cid!;
     if (downloadList.indexWhere((e) => e.cid == cid) != -1) {
+      return;
+    }
+    if (waitDownloadQueue.indexWhere((e) => e.cid == cid) != -1) {
       return;
     }
     final pageData = PageInfo(
@@ -170,6 +175,9 @@ class DownloadService extends GetxService {
   ) {
     final cid = episode.cid!;
     if (downloadList.indexWhere((e) => e.cid == cid) != -1) {
+      return;
+    }
+    if (waitDownloadQueue.indexWhere((e) => e.cid == cid) != -1) {
       return;
     }
     final currentTime = DateTime.now().millisecondsSinceEpoch ~/ 1000;
@@ -236,13 +244,10 @@ class DownloadService extends GetxService {
       ..pageDirPath = entryDir.parent.path
       ..entryDirPath = entryDir.path
       ..status = DownloadStatus.wait;
-    downloadList.insert(0, entry);
-    flagNotifier.refresh();
+    waitDownloadQueue.add(entry);
     final currStatus = curDownload.value?.status?.index;
     if (currStatus == null || currStatus > 3) {
       startDownload(entry);
-    } else {
-      waitDownloadQueue.add(entry);
     }
   }
 
@@ -284,7 +289,9 @@ class DownloadService extends GetxService {
         curDownload.value?.status = DownloadStatus.pause;
       }
 
+      _curCid = entry.cid;
       curDownload.value = entry;
+      waitDownloadQueue.refresh();
       await _startDownload(entry);
     });
   }
@@ -314,7 +321,7 @@ class DownloadService extends GetxService {
         ]);
 
         final danmaku = res.removeAt(0).data;
-        for (var i in res) {
+        for (final i in res) {
           if (i.isSuccess) {
             danmaku.elems.addAll(i.data.elems);
           }
@@ -433,9 +440,9 @@ class DownloadService extends GetxService {
     }
   }
 
-  Future<void> _updateBiliDownloadEntryJson(BiliDownloadEntryInfo entry) async {
+  Future<void> _updateBiliDownloadEntryJson(BiliDownloadEntryInfo entry) {
     final entryJsonFile = File(path.join(entry.entryDirPath, _entryFile));
-    await entryJsonFile.writeAsString(jsonEncode(entry.toJson()));
+    return entryJsonFile.writeAsString(jsonEncode(entry.toJson()));
   }
 
   void _onReceive(int progress, int total) {
@@ -451,6 +458,11 @@ class DownloadService extends GetxService {
   }
 
   void _onDone([Object? error]) {
+    if (error != null) {
+      _updateCurStatus(_downloadManager?.status ?? DownloadStatus.pause);
+      return;
+    }
+
     final status = switch (_audioDownloadManager?.status) {
       DownloadStatus.downloading => DownloadStatus.audioDownloading,
       DownloadStatus.failDownload => DownloadStatus.failDownloadAudio,
@@ -459,9 +471,7 @@ class DownloadService extends GetxService {
     _updateCurStatus(status);
 
     if (curDownload.value case final curEntryInfo?) {
-      if (error == null) {
-        curEntryInfo.downloadedBytes = curEntryInfo.totalBytes;
-      }
+      curEntryInfo.downloadedBytes = curEntryInfo.totalBytes;
       if (status == DownloadStatus.completed) {
         _completeDownload();
       } else {
@@ -494,29 +504,40 @@ class DownloadService extends GetxService {
       ..downloadedBytes = entry.totalBytes
       ..isCompleted = true;
     await _updateBiliDownloadEntryJson(entry);
+    waitDownloadQueue.remove(entry);
+    downloadList.insert(0, entry);
     flagNotifier.refresh();
+    _curCid = null;
     curDownload.value = null;
     _downloadManager = null;
     _audioDownloadManager = null;
-    _nextDownload();
+    nextDownload();
   }
 
-  void _nextDownload() {
+  void nextDownload() {
     if (waitDownloadQueue.isNotEmpty) {
-      final next = waitDownloadQueue.removeAt(0);
-      if (!next.isCompleted && downloadList.contains(next)) {
-        startDownload(next);
-      } else {
-        _nextDownload();
-      }
+      startDownload(waitDownloadQueue.first);
     }
   }
 
   Future<void> deleteDownload({
     required BiliDownloadEntryInfo entry,
+    bool removeList = false,
+    bool removeQueue = false,
+    bool refresh = true,
+    bool downloadNext = true,
   }) async {
+    if (removeList) {
+      downloadList.remove(entry);
+    }
+    if (removeQueue) {
+      waitDownloadQueue.remove(entry);
+    }
     if (curDownload.value?.cid == entry.cid) {
-      await cancelDownload(isDelete: true);
+      await cancelDownload(
+        isDelete: true,
+        downloadNext: downloadNext,
+      );
     }
     final downloadDir = Directory(entry.pageDirPath);
     if (downloadDir.existsSync()) {
@@ -529,15 +550,20 @@ class DownloadService extends GetxService {
         }
       }
     }
-    downloadList.remove(entry);
-    waitDownloadQueue.remove(entry);
-    flagNotifier.refresh();
+    if (refresh) {
+      flagNotifier.refresh();
+    }
   }
 
-  Future<void> deletePage({required String pageDirPath}) async {
+  Future<void> deletePage({
+    required String pageDirPath,
+    bool refresh = true,
+  }) async {
     await Directory(pageDirPath).tryDel(recursive: true);
     downloadList.removeWhere((e) => e.pageDirPath == pageDirPath);
-    flagNotifier.refresh();
+    if (refresh) {
+      flagNotifier.refresh();
+    }
   }
 
   Future<void> cancelDownload({
@@ -555,19 +581,22 @@ class DownloadService extends GetxService {
       }
     }
     if (isDelete) {
+      _curCid = null;
       curDownload.value = null;
     } else {
       _updateCurStatus(DownloadStatus.pause);
     }
     if (downloadNext) {
-      _nextDownload();
+      nextDownload();
     }
   }
 }
 
-extension on Set<void Function()> {
+typedef SetNotifier = Set<VoidCallback>;
+
+extension SetNotifierExt on SetNotifier {
   void refresh() {
-    for (var i in this) {
+    for (final i in this) {
       i();
     }
   }

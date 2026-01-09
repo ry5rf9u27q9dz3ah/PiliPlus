@@ -36,9 +36,9 @@ class MouseInteractiveViewer extends StatefulWidget {
     this.transformationController,
     this.alignment,
     this.trackpadScrollCausesScale = false,
-
     required this.childKey,
     required this.child,
+    required this.onTranslate,
   }) : assert(minScale > 0),
        assert(interactionEndFrictionCoefficient > 0),
        assert(maxScale > 0),
@@ -66,6 +66,7 @@ class MouseInteractiveViewer extends StatefulWidget {
   final GestureScaleUpdateCallback? onInteractionUpdate;
   final TransformationController? transformationController;
   final GlobalKey childKey;
+  final VoidCallback onTranslate;
 
   static const double _kDrag = 0.0000135;
 
@@ -80,7 +81,9 @@ class _MouseInteractiveViewerState extends State<MouseInteractiveViewer>
 
   final GlobalKey _parentKey = GlobalKey();
   Animation<Offset>? _animation;
+  CurvedAnimation? _curvedAnimation;
   Animation<double>? _scaleAnimation;
+  CurvedAnimation? _curvedScaleAnimation;
   late Offset _scaleAnimationFocalPoint;
   late AnimationController _controller;
   late AnimationController _scaleController;
@@ -95,17 +98,7 @@ class _MouseInteractiveViewerState extends State<MouseInteractiveViewer>
     touchSlop: Platform.isIOS ? 9 : 4,
   );
 
-  late final _scaleGestureRecognizer =
-      ScaleGestureRecognizer(
-          debugOwner: this,
-          allowedButtonsFilter: (buttons) => buttons == kPrimaryButton,
-          trackpadScrollToScaleFactor: Offset(0, -1 / widget.scaleFactor),
-          trackpadScrollCausesScale: widget.trackpadScrollCausesScale,
-        )
-        ..gestureSettings = gestureSettings
-        ..onStart = _onScaleStart
-        ..onUpdate = _onScaleUpdate
-        ..onEnd = _onScaleEnd;
+  late final ScaleGestureRecognizer _scaleGestureRecognizer;
 
   final bool _rotateEnabled = false;
 
@@ -450,7 +443,10 @@ class _MouseInteractiveViewerState extends State<MouseInteractiveViewer>
                   frictionSimulationY.finalX,
                 ),
               ).animate(
-                CurvedAnimation(parent: _controller, curve: Curves.decelerate),
+                _curvedAnimation ??= CurvedAnimation(
+                  parent: _controller,
+                  curve: Curves.decelerate,
+                ),
               )
               ..addListener(_handleInertiaAnimation);
         _controller
@@ -477,7 +473,7 @@ class _MouseInteractiveViewerState extends State<MouseInteractiveViewer>
                 begin: scale,
                 end: frictionSimulation.x(tFinal),
               ).animate(
-                CurvedAnimation(
+                _curvedScaleAnimation ??= CurvedAnimation(
                   parent: _scaleController,
                   curve: Curves.decelerate,
                 ),
@@ -641,6 +637,8 @@ class _MouseInteractiveViewerState extends State<MouseInteractiveViewer>
       _transformer.value,
       newFocalPointScene - focalPointScene,
     );
+
+    widget.onTranslate();
   }
 
   void _handleInertiaAnimation() {
@@ -697,6 +695,17 @@ class _MouseInteractiveViewerState extends State<MouseInteractiveViewer>
   @override
   void initState() {
     super.initState();
+    _scaleGestureRecognizer =
+        ScaleGestureRecognizer(
+            debugOwner: this,
+            allowedButtonsFilter: (buttons) => buttons == kPrimaryButton,
+            trackpadScrollToScaleFactor: Offset(0, -1 / widget.scaleFactor),
+            trackpadScrollCausesScale: widget.trackpadScrollCausesScale,
+          )
+          ..gestureSettings = gestureSettings
+          ..onStart = _onScaleStart
+          ..onUpdate = _onScaleUpdate
+          ..onEnd = _onScaleEnd;
     _controller = AnimationController(vsync: this);
     _scaleController = AnimationController(vsync: this);
 
@@ -723,7 +732,9 @@ class _MouseInteractiveViewerState extends State<MouseInteractiveViewer>
   @override
   void dispose() {
     _scaleGestureRecognizer.dispose();
+    _curvedAnimation?.dispose();
     _controller.dispose();
+    _curvedScaleAnimation?.dispose();
     _scaleController.dispose();
     _transformer.removeListener(_handleTransformation);
     if (widget.transformationController == null) {

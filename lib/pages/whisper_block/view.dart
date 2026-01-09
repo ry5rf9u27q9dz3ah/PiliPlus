@@ -38,8 +38,8 @@ class _WhisperBlockPageState extends State<WhisperBlockPage> {
   ) {
     return switch (loadingState) {
       Loading() => loadingWidget,
-      Success(:var response) =>
-        response?.isNotEmpty == true
+      Success(:final response) =>
+        response != null && response.isNotEmpty
             ? Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -75,7 +75,7 @@ class _WhisperBlockPageState extends State<WhisperBlockPage> {
                         child: Wrap(
                           spacing: 12,
                           runSpacing: 12,
-                          children: response!
+                          children: response
                               .map(
                                 (e) => SearchText(
                                   text: e.keyword,
@@ -141,7 +141,7 @@ class _WhisperBlockPageState extends State<WhisperBlockPage> {
                   ],
                 ),
               ),
-      Error(:var errMsg) => scrollErrorWidget(
+      Error(:final errMsg) => scrollErrorWidget(
         errMsg: errMsg,
         onReload: _controller.onReload,
       ),
@@ -196,9 +196,10 @@ class _WhisperBlockPageState extends State<WhisperBlockPage> {
                 decoration: InputDecoration(
                   isDense: true,
                   hintText: '请输入',
+                  visualDensity: .standard,
                   hintStyle: const TextStyle(fontSize: 14),
                   contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 14,
+                    horizontal: 12,
                     vertical: 6,
                   ),
                   border: const OutlineInputBorder(

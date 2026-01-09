@@ -2,9 +2,9 @@ import 'dart:math' show min;
 
 import 'package:PiliPlus/common/constants.dart';
 import 'package:PiliPlus/common/widgets/button/icon_button.dart';
+import 'package:PiliPlus/common/widgets/flutter/refresh_indicator.dart';
 import 'package:PiliPlus/common/widgets/image/network_img_layer.dart';
 import 'package:PiliPlus/common/widgets/progress_bar/audio_video_progress_bar.dart';
-import 'package:PiliPlus/common/widgets/refresh_indicator.dart';
 import 'package:PiliPlus/grpc/bilibili/app/listener/v1.pb.dart';
 import 'package:PiliPlus/models/common/image_preview_type.dart';
 import 'package:PiliPlus/models/common/image_type.dart';
@@ -13,9 +13,14 @@ import 'package:PiliPlus/pages/video/introduction/ugc/widgets/action_item.dart';
 import 'package:PiliPlus/plugin/pl_player/models/play_repeat.dart';
 import 'package:PiliPlus/utils/date_utils.dart';
 import 'package:PiliPlus/utils/duration_utils.dart';
-import 'package:PiliPlus/utils/extension.dart';
+import 'package:PiliPlus/utils/extension/context_ext.dart';
+import 'package:PiliPlus/utils/extension/num_ext.dart';
+import 'package:PiliPlus/utils/extension/size_ext.dart';
+import 'package:PiliPlus/utils/extension/string_ext.dart';
+import 'package:PiliPlus/utils/extension/theme_ext.dart';
 import 'package:PiliPlus/utils/num_utils.dart';
 import 'package:PiliPlus/utils/page_utils.dart';
+import 'package:PiliPlus/utils/platform_utils.dart';
 import 'package:PiliPlus/utils/storage.dart';
 import 'package:PiliPlus/utils/storage_key.dart';
 import 'package:PiliPlus/utils/utils.dart';
@@ -78,6 +83,7 @@ class _AudioPageState extends State<AudioPage> {
     final isPortrait = MediaQuery.sizeOf(context).isPortrait;
     final padding = MediaQuery.viewPaddingOf(context);
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         actions: [
           Builder(
@@ -169,7 +175,8 @@ class _AudioPageState extends State<AudioPage> {
           final theme = Theme.of(context);
           final colorScheme = theme.colorScheme;
           return FractionallySizedBox(
-            heightFactor: Utils.isMobile && !context.mediaQuerySize.isPortrait
+            heightFactor:
+                PlatformUtils.isMobile && !context.mediaQuerySize.isPortrait
                 ? 1.0
                 : 0.7,
             alignment: Alignment.bottomCenter,
@@ -259,9 +266,7 @@ class _AudioPageState extends State<AudioPage> {
                                                     _controller.index!) {
                                                   _controller.index -= 1;
                                                 }
-                                                _controller.playlist!.removeAt(
-                                                  index,
-                                                );
+                                                playlist.removeAt(index);
                                                 (context as Element)
                                                     .markNeedsBuild();
                                               },
@@ -306,13 +311,14 @@ class _AudioPageState extends State<AudioPage> {
                                               children: [
                                                 if (isCurr) ...[
                                                   WidgetSpan(
-                                                    alignment:
-                                                        PlaceholderAlignment
-                                                            .bottom,
+                                                    alignment: .bottom,
                                                     child: Image.asset(
                                                       'assets/images/live.gif',
                                                       width: 16,
                                                       height: 16,
+                                                      cacheWidth: 16.cacheSize(
+                                                        context,
+                                                      ),
                                                       color:
                                                           colorScheme.primary,
                                                     ),
@@ -350,12 +356,14 @@ class _AudioPageState extends State<AudioPage> {
                                         children: [
                                           if (isCurr) ...[
                                             WidgetSpan(
-                                              alignment:
-                                                  PlaceholderAlignment.bottom,
+                                              alignment: .bottom,
                                               child: Image.asset(
                                                 'assets/images/live.gif',
                                                 width: 16,
                                                 height: 16,
+                                                cacheWidth: 16.cacheSize(
+                                                  context,
+                                                ),
                                                 color: colorScheme.primary,
                                               ),
                                             ),
@@ -375,9 +383,7 @@ class _AudioPageState extends State<AudioPage> {
                                               if (index < _controller.index!) {
                                                 _controller.index -= 1;
                                               }
-                                              _controller.playlist!.removeAt(
-                                                index,
-                                              );
+                                              playlist.removeAt(index);
                                               (context as Element)
                                                   .markNeedsBuild();
                                             },
@@ -494,7 +500,7 @@ class _AudioPageState extends State<AudioPage> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: PlayRepeat.values
-                        .sublist(0, 4)
+                        .take(4)
                         .map(
                           (e) => _playModeWidget(
                             colorScheme: colorScheme,
@@ -751,7 +757,7 @@ class _AudioPageState extends State<AudioPage> {
         onSeek: _onSeek,
       ),
     );
-    if (Utils.isDesktop) {
+    if (PlatformUtils.isDesktop) {
       return MouseRegion(
         cursor: SystemMouseCursors.click,
         child: child,

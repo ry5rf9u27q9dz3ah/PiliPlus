@@ -1,7 +1,7 @@
 import 'dart:math';
 
 import 'package:PiliPlus/common/widgets/custom_icon.dart';
-import 'package:PiliPlus/common/widgets/refresh_indicator.dart';
+import 'package:PiliPlus/common/widgets/flutter/refresh_indicator.dart';
 import 'package:PiliPlus/http/constants.dart';
 import 'package:PiliPlus/models/dynamics/result.dart';
 import 'package:PiliPlus/pages/common/dyn/common_dyn_page.dart';
@@ -9,14 +9,14 @@ import 'package:PiliPlus/pages/dynamics/widgets/author_panel.dart';
 import 'package:PiliPlus/pages/dynamics/widgets/dynamic_panel.dart';
 import 'package:PiliPlus/pages/dynamics_detail/controller.dart';
 import 'package:PiliPlus/pages/dynamics_repost/view.dart';
-import 'package:PiliPlus/utils/extension.dart';
+import 'package:PiliPlus/utils/extension/get_ext.dart';
 import 'package:PiliPlus/utils/grid.dart';
 import 'package:PiliPlus/utils/num_utils.dart';
 import 'package:PiliPlus/utils/request_utils.dart';
 import 'package:PiliPlus/utils/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:get/get.dart' hide ContextExtensionss;
+import 'package:get/get.dart';
 
 class DynamicDetailPage extends StatefulWidget {
   const DynamicDetailPage({super.key});
@@ -210,6 +210,7 @@ class _DynamicDetailPageState extends CommonDynPageState<DynamicDetailPage> {
             final primary = theme.colorScheme.primary;
             final outline = theme.colorScheme.outline;
             final btnStyle = TextButton.styleFrom(
+              tapTargetSize: .padded,
               padding: const EdgeInsets.symmetric(horizontal: 15),
               foregroundColor: outline,
             );
@@ -219,14 +220,14 @@ class _DynamicDetailPageState extends CommonDynPageState<DynamicDetailPage> {
               required String text,
               required DynamicStat? stat,
               required VoidCallback onPressed,
-              IconData? activitedIcon,
+              IconData? activatedIcon,
             }) {
               final status = stat?.status == true;
               final color = status ? primary : outline;
               return TextButton.icon(
                 onPressed: onPressed,
                 icon: Icon(
-                  status ? activitedIcon : icon,
+                  status ? activatedIcon : icon,
                   size: 16,
                   color: color,
                 ),
@@ -278,7 +279,7 @@ class _DynamicDetailPageState extends CommonDynPageState<DynamicDetailPage> {
                                 useSafeArea: true,
                                 builder: (context) => RepostPanel(
                                   item: controller.dynItem,
-                                  callback: () {
+                                  onSuccess: () {
                                     if (forward != null) {
                                       int count = forward.count ?? 0;
                                       forward.count = count + 1;
@@ -309,7 +310,7 @@ class _DynamicDetailPageState extends CommonDynPageState<DynamicDetailPage> {
                           builder: (context) {
                             return textIconButton(
                               icon: FontAwesomeIcons.thumbsUp,
-                              activitedIcon: FontAwesomeIcons.solidThumbsUp,
+                              activatedIcon: FontAwesomeIcons.solidThumbsUp,
                               text: '点赞',
                               stat: moduleStat?.like,
                               onPressed: () => RequestUtils.onLikeDynamic(

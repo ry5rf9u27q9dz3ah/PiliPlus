@@ -2,8 +2,8 @@ import 'dart:math';
 
 import 'package:PiliPlus/common/widgets/badge.dart';
 import 'package:PiliPlus/common/widgets/custom_icon.dart';
+import 'package:PiliPlus/common/widgets/flutter/refresh_indicator.dart';
 import 'package:PiliPlus/common/widgets/image/network_img_layer.dart';
-import 'package:PiliPlus/common/widgets/refresh_indicator.dart';
 import 'package:PiliPlus/models/common/badge_type.dart';
 import 'package:PiliPlus/models/common/image_preview_type.dart';
 import 'package:PiliPlus/models/common/image_type.dart';
@@ -15,7 +15,7 @@ import 'package:PiliPlus/pages/article/widgets/opus_content.dart';
 import 'package:PiliPlus/pages/common/dyn/common_dyn_page.dart';
 import 'package:PiliPlus/pages/dynamics_repost/view.dart';
 import 'package:PiliPlus/utils/date_utils.dart';
-import 'package:PiliPlus/utils/extension.dart';
+import 'package:PiliPlus/utils/extension/get_ext.dart';
 import 'package:PiliPlus/utils/grid.dart';
 import 'package:PiliPlus/utils/image_utils.dart';
 import 'package:PiliPlus/utils/num_utils.dart';
@@ -25,7 +25,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:get/get.dart' hide ContextExtensionss;
+import 'package:get/get.dart';
 import 'package:html/parser.dart' as parser;
 
 class ArticlePage extends StatefulWidget {
@@ -175,7 +175,7 @@ class _ArticlePageState extends CommonDynPageState<ArticlePage> {
             // if (kDebugMode) debugPrint('moduleBlocked');
             final moduleBlocked = controller.opusData!.modules.moduleBlocked!;
             content = SliverToBoxAdapter(
-              child: moduleBlockedItem(theme, moduleBlocked, maxWidth),
+              child: moduleBlockedItem(context, theme, moduleBlocked, maxWidth),
             );
           } else if (controller.articleData?.content != null) {
             if (controller.articleData?.type == 3) {
@@ -292,6 +292,8 @@ class _ArticlePageState extends CommonDynPageState<ArticlePage> {
                                             fadeOutDuration: const Duration(
                                               milliseconds: 120,
                                             ),
+                                            placeholder: (_, _) =>
+                                                const SizedBox.shrink(),
                                           ),
                                         ),
                                         if (pic.isLongPic == true)
@@ -502,6 +504,7 @@ class _ArticlePageState extends CommonDynPageState<ArticlePage> {
           late final primary = theme.colorScheme.primary;
           late final outline = theme.colorScheme.outline;
           late final btnStyle = TextButton.styleFrom(
+            tapTargetSize: .padded,
             padding: const EdgeInsets.symmetric(horizontal: 15),
             foregroundColor: outline,
           );
@@ -511,14 +514,14 @@ class _ArticlePageState extends CommonDynPageState<ArticlePage> {
             required String text,
             required DynamicStat? stat,
             required VoidCallback onPressed,
-            IconData? activitedIcon,
+            IconData? activatedIcon,
           }) {
             final status = stat?.status == true;
             final color = status ? primary : outline;
             return TextButton.icon(
               onPressed: onPressed,
               icon: Icon(
-                status ? activitedIcon : icon,
+                status ? activatedIcon : icon,
                 size: 16,
                 color: color,
               ),
@@ -597,7 +600,7 @@ class _ArticlePageState extends CommonDynPageState<ArticlePage> {
                                     pic: summary.cover,
                                     title: summary.title,
                                     uname: summary.author?.name,
-                                    callback: () {
+                                    onSuccess: () {
                                       if (forward != null) {
                                         int count = forward.count ?? 0;
                                         forward.count = count + 1;
@@ -625,7 +628,7 @@ class _ArticlePageState extends CommonDynPageState<ArticlePage> {
                       Expanded(
                         child: textIconButton(
                           icon: FontAwesomeIcons.star,
-                          activitedIcon: FontAwesomeIcons.solidStar,
+                          activatedIcon: FontAwesomeIcons.solidStar,
                           text: '收藏',
                           stat: stats.favorite,
                           onPressed: controller.onFav,
@@ -634,7 +637,7 @@ class _ArticlePageState extends CommonDynPageState<ArticlePage> {
                       Expanded(
                         child: textIconButton(
                           icon: FontAwesomeIcons.thumbsUp,
-                          activitedIcon: FontAwesomeIcons.solidThumbsUp,
+                          activatedIcon: FontAwesomeIcons.solidThumbsUp,
                           text: '点赞',
                           stat: stats.like,
                           onPressed: controller.onLike,

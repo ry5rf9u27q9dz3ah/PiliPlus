@@ -1,5 +1,4 @@
-import 'package:PiliPlus/common/widgets/list_tile.dart';
-import 'package:PiliPlus/pages/setting/models/model.dart';
+import 'package:PiliPlus/common/widgets/flutter/list_tile.dart';
 import 'package:PiliPlus/pages/setting/models/recommend_settings.dart';
 import 'package:PiliPlus/services/learning_mode_service.dart';
 import 'package:flutter/material.dart' hide ListTile;
@@ -32,9 +31,7 @@ class _RecommendSettingState extends State<RecommendSetting> {
     final theme = Theme.of(context);
     return Scaffold(
       resizeToAvoidBottomInset: false,
-      appBar: widget.showAppBar == false
-          ? null
-          : AppBar(title: const Text('推荐流设置')),
+      appBar: widget.showAppBar ? AppBar(title: const Text('推荐流设置')) : null,
       body: ListView(
         padding: EdgeInsets.only(
           left: showAppBar ? padding.left : 0,
@@ -187,9 +184,9 @@ class _RecommendSettingState extends State<RecommendSetting> {
               ),
             );
           }),
-          ...part.map((item) => item.widget),
+          ...list.take(4).map((item) => item.widget),
           const Divider(height: 1),
-          ...list.map((item) => item.widget),
+          ...list.skip(4).map((item) => item.widget),
           ListTile(
             dense: true,
             subtitle: Text(
